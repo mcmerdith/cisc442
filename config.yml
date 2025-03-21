@@ -1,0 +1,24 @@
+options:
+    testing:
+        save_images: false
+    image_dir: images
+    kernel_dir: kernels
+    output_dir: output
+execute:
+    - operation: convolve
+      kernel: sobel.txt
+      source: lena.png
+      output: convolved.png
+    - operation: reduce
+      source: lena.png
+      output: reduced.png
+    - operation: expand
+      source: lena.png
+      output: expanded.png
+    - pipeline:
+          - operation: reduce
+          - operation: convolve
+            kernel: sobel.txt
+          - operation: expand
+      source: lena.png
+      output: reduced_convolved_expanded.png

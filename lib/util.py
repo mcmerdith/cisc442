@@ -1,10 +1,15 @@
 from cv2.typing import MatLike
 import cv2 as cv
 import numpy as np
+from lib.config import Config
 from os import path, makedirs
 
-IMAGE_DIR = "images"
-OUT_DIR = "output"
+
+def init(config: Config):
+    global IMAGE_DIR, KERNEL_DIR, OUT_DIR
+    IMAGE_DIR = config.options.image_dir
+    KERNEL_DIR = config.options.kernel_dir
+    OUT_DIR = config.options.output_dir
 
 
 def save_image(image: MatLike, name: str):
@@ -30,6 +35,10 @@ def load_image(name: str):
         MatLike: The loaded image
     """
     return cv.imread(path.join(IMAGE_DIR, name))
+
+
+def load_kernel(name: str):
+    return np.loadtxt(path.join(KERNEL_DIR, name))
 
 
 def gaussian_kernel_1d(size: int, sigma=1.0) -> MatLike:

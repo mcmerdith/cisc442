@@ -1,12 +1,17 @@
 import cv2 as cv
 import numpy as np
+from lib.config import Config, TestOptions
 from lib.util import gaussian_kernel_1d, load_image, save_image
 from lib.image import convolve, expand, reduce
 
-SAVE_TEST_IMAGES = True
+
+OPTIONS: TestOptions
 
 
-def test():
+def test(config: Config):
+    # load config
+    global OPTIONS
+    OPTIONS = config.CONFIG.options.testing
     test_utils()
     test_convolve()
     test_reduce()
@@ -31,7 +36,7 @@ def test_convolve():
     convolved = convolve(image, sobel_x)
     gray_convolved = convolve(gray, sobel_x)
 
-    if SAVE_TEST_IMAGES:
+    if OPTIONS.save_images:
         save_image(convolved, "test_convolved.png")
         save_image(gray_convolved, "test_gray_convolved.png")
 
@@ -52,7 +57,7 @@ def test_reduce():
     image = load_image("lena.png")
 
     reduced = reduce(image)
-    if SAVE_TEST_IMAGES:
+    if OPTIONS.save_images:
         save_image(reduced, "test_reduced.png")
 
     # image should be half the size
@@ -65,7 +70,7 @@ def test_expand():
     image = load_image("lena.png")
 
     expanded = expand(image)
-    if SAVE_TEST_IMAGES:
+    if OPTIONS.save_images:
         save_image(expanded, "test_expanded.png")
 
     # image should be double the size
