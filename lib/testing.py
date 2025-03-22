@@ -1,21 +1,25 @@
 import cv2 as cv
 import numpy as np
-from lib.config import Config, TestOptions
+from lib.config import Config
+from lib.executors import build_executor
 from lib.util import gaussian_kernel_1d, load_image, save_image
 from lib.image import convolve, expand, reduce
+from rich.progress import track
 
 
-OPTIONS: TestOptions
+SAVE_IMAGES = False
 
 
 def test(config: Config):
-    # load config
-    global OPTIONS
-    OPTIONS = config.CONFIG.options.testing
-    test_utils()
-    test_convolve()
-    test_reduce()
-    test_expand()
+    global SAVE_IMAGES
+    SAVE_IMAGES = config.options.testing.save_images
+
+    basic_tests = [test_utils, test_convolve, test_reduce, test_expand]
+
+    for test in track(basic_tests, description="Running tests"):
+        test()
+
+    test_pipeline(config)
 
 
 def test_utils():
@@ -36,7 +40,7 @@ def test_convolve():
     convolved = convolve(image, sobel_x)
     gray_convolved = convolve(gray, sobel_x)
 
-    if OPTIONS.save_images:
+    if SAVE_IMAGES:
         save_image(convolved, "test_convolved.png")
         save_image(gray_convolved, "test_gray_convolved.png")
 
@@ -57,7 +61,7 @@ def test_reduce():
     image = load_image("lena.png")
 
     reduced = reduce(image)
-    if OPTIONS.save_images:
+    if SAVE_IMAGES:
         save_image(reduced, "test_reduced.png")
 
     # image should be half the size
@@ -70,10 +74,20 @@ def test_expand():
     image = load_image("lena.png")
 
     expanded = expand(image)
-    if OPTIONS.save_images:
+    if SAVE_IMAGES:
         save_image(expanded, "test_expanded.png")
 
     # image should be double the size
     assert expanded.shape[:2] == (image.shape[0] * 2, image.shape[1] * 2)
 
     print("Expand OK")
+
+
+def test_pipeline(config: Config):
+    print("Beginning pipeline test")
+
+    executor = build_executor(config.execute)
+    assert all([step.execute() for step in track(
+        executor, description="Running tests")]), "Pipeline Failure"
+
+    print("Pipeline OK")

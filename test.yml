@@ -4,31 +4,27 @@ options:
     image_dir: images
     kernel_dir: kernels
     test_dir: test_input
-    output_dir: test_input
+    output_dir: test_output
+    log_level: INFO
 execute:
     - operation: convolve
       kernel: identity.txt
       source: lena.png
-      output: lena.png
-      test: true
+      test: lena.png
     - operation: convolve
       kernel: sobel.txt
       source: lena.png
-      output: sobel.png
-      test: true
+      test: sobel.png
     - operation: reduce
       source: lena.png
-      output: reduced.png
-      test: true
+      test: reduced.png
     - operation: expand
       source: lena.png
-      output: expanded.png
-      test: true
+      test: expanded.png
     - pipeline:
           - operation: reduce
           - operation: convolve
             kernel: sobel.txt
           - operation: expand
       source: lena.png
-      output: reduced_convolved_expanded.png
-      test: true
+      test: reduced_convolved_expanded.png

@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from enum import Enum
 from yaml import load
 try:
     from yaml import CLoader as Loader
@@ -6,20 +7,30 @@ except ImportError:
     from yaml import Loader
 
 
+class LogLevel(Enum):
+    DEBUG = 1
+    INFO = 2
+    WARNING = 3
+    ERROR = 4
+
+
 @dataclass
 class TestOptions:
-    save_images: bool
+    save_images: bool = False
 
 
 @dataclass
 class Options:
     testing: TestOptions
-    image_dir: str
-    kernel_dir: str
-    output_dir: str
+    image_dir: str = "images"
+    kernel_dir: str = "kernels"
+    test_dir: str = "test_input"
+    output_dir: str = "output"
+    log_level: LogLevel = LogLevel.WARNING
 
     def __post_init__(self):
         self.testing = TestOptions(**self.testing)
+        self.log_level = LogLevel[self.log_level]
 
 
 @dataclass
@@ -32,6 +43,17 @@ class Config:
 
 
 def read_config(file: str):
+    """
+    Read a config file and return a Config object.
+
+    Args:
+        file (str): The name of the config file
+
+    Returns:
+        Config: The loaded config
+    """
+    if not file.endswith(".yml") and not file.endswith(".yaml"):
+        file = file + ".yml"
     with open(file, "r") as f:
         try:
             return Config(**load(f, Loader=Loader))

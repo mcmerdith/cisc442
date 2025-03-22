@@ -4,11 +4,16 @@ options:
     image_dir: images
     kernel_dir: kernels
     output_dir: output
+    log_level: INFO
 execute:
+    - operation: convolve
+      kernel: identity.txt
+      source: lena.png
+      output: lena.png
     - operation: convolve
       kernel: sobel.txt
       source: lena.png
-      output: convolved.png
+      output: sobel.png
     - operation: reduce
       source: lena.png
       output: reduced.png

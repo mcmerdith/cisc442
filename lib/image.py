@@ -57,8 +57,8 @@ def convolve(I: MatLike, H: MatLike, mode='reflect') -> MatLike:
                     H * I_padded[y:y + kernel_h, x:x + kernel_w]
                 )
 
-    # clip to valid range [0, 255]
-    output = np.clip(output, 0, 255)
+    # clip to valid range [0, 255] and cast to uint8
+    output = np.clip(output, 0, 255).astype(np.uint8)
 
     return output
 
