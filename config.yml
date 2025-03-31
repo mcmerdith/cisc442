@@ -3,8 +3,9 @@ options:
         save_images: false
     image_dir: images
     kernel_dir: kernels
+    test_dir: test_input
     output_dir: output
-    log_level: INFO
+    log_level: WARN
 execute:
     - operation: convolve
       kernel: identity.txt

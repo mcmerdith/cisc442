@@ -9,8 +9,10 @@ from rich.progress import track
 
 def main(config: Config):
     executor = build_executor(config.execute)
-    for step in track(executor, description="Executing"):
-        step.execute()
+    # for step in track(executor, description="Executing"):
+    with util.console.status("Executing") as status:
+        for step in executor:
+            step.execute()
 
 
 # some basic entry point stuff

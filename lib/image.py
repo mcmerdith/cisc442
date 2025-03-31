@@ -1,6 +1,6 @@
-from cv2.typing import MatLike
 import cv2 as cv
 import numpy as np
+from cv2.typing import MatLike
 
 from lib.util import gaussian_kernel_1d
 
@@ -40,7 +40,7 @@ def convolve(I: MatLike, H: MatLike, mode='reflect') -> MatLike:
     I_padded = np.pad(I, padding, mode=mode)
 
     # create a blank output image
-    output = np.zeros(I.shape)
+    output = np.zeros(I.shape, dtype=np.float32)
 
     # do the convolution for each channel of each pixel
     for y in range(img_h):
@@ -105,23 +105,62 @@ def expand(I: MatLike):
     return cv.resize(I, (I.shape[1] * 2, I.shape[0] * 2), interpolation=cv.INTER_CUBIC)
 
 
-def gaussianPyramid(I: MatLike, n):
-    #################################################################
-    # Use the Reduce() function to write the GaussianPyramid(I,n) function, where n is the no. of levels.
+def gaussianPyramid(I: MatLike, n: int):
+    """
+    Compute the n-level Gaussian pyramid of an image.
 
-    pass
+    Args:
+        I (MatLike): The input image
+        n (int): The number of levels
+
+    Returns:
+        list[MatLike]: The n-level Gaussian pyramid
+    """
+
+    levels = [I]
+    for _ in range(n-1):
+        levels.append(reduce(levels[-1]))
+
+    return levels
 
 
 def laplacianPyramid(I: MatLike, n):
-    #################################################################
-    # Use the above functions to write LaplacianPyramids(I,n) that produces n level Laplacian pyramid of I.
+    """
+    Compute the n-level Laplacian pyramid of an image.
 
-    pass
+    Args:
+        I (MatLike): The input image
+        n (int): The number of levels
+
+    Returns:
+        list[MatLike]: The n-level Laplacian pyramid
+    """
+
+    pyramid = gaussianPyramid(I, n)
+
+    levels = []
+    for i in range(n-1):
+        levels.append(pyramid[i] - expand(pyramid[i+1]))
+    levels.append(pyramid[-1])
+
+    return levels
 
 
-def reconstruct(LI: MatLike, n):
-    #################################################################
-    # Write the Reconstruct(LI,n) function which collapses the Laplacian pyramid LI of n levels
-    # to generate the original image. Report the error in reconstruction using image difference.
+def reconstruct(LI: list[MatLike], n):
+    """
+    Reconstruct an image from a Laplacian pyramid.
 
-    pass
+    Args:
+        LI (list[MatLike]): The Laplacian pyramid
+        n (int): The number of levels
+
+    Returns:
+        MatLike: The reconstructed image
+    """
+    assert len(LI) == n
+
+    current_level = LI[-1]
+    for i in reversed(range(n-1)):
+        current_level = LI[i] + expand(current_level)
+
+    return current_level

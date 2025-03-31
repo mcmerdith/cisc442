@@ -28,3 +28,10 @@ execute:
           - operation: expand
       source: lena.png
       test: reduced_convolved_expanded.png
+    - pipeline:
+          - operation: laplacianPyramid
+            levels: 5
+          - operation: reconstruct
+            levels: 5
+      source: lena.png
+      test: lena.png

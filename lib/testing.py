@@ -2,7 +2,7 @@ import cv2 as cv
 import numpy as np
 from lib.config import Config
 from lib.executors import build_executor
-from lib.util import gaussian_kernel_1d, load_image, save_image
+from lib.util import gaussian_kernel_1d, load_image, save_image, logger, console
 from lib.image import convolve, expand, reduce
 from rich.progress import track
 
@@ -16,8 +16,9 @@ def test(config: Config):
 
     basic_tests = [test_utils, test_convolve, test_reduce, test_expand]
 
-    for test in track(basic_tests, description="Running tests"):
-        test()
+    with console.status("Executing") as status:
+        for test in basic_tests:
+            test()
 
     test_pipeline(config)
 
@@ -54,7 +55,7 @@ def test_convolve():
     assert (convolved == cv_convolved).all()
     assert (gray_convolved == cv_gray_convolved).all()
 
-    print("Convolution OK")
+    logger.info("Convolution OK")
 
 
 def test_reduce():
@@ -67,7 +68,7 @@ def test_reduce():
     # image should be half the size
     assert reduced.shape[:2] == (image.shape[0] // 2, image.shape[1] // 2)
 
-    print("Reduce OK")
+    logger.info("Reduce OK")
 
 
 def test_expand():
@@ -80,14 +81,15 @@ def test_expand():
     # image should be double the size
     assert expanded.shape[:2] == (image.shape[0] * 2, image.shape[1] * 2)
 
-    print("Expand OK")
+    logger.info("Expand OK")
 
 
 def test_pipeline(config: Config):
-    print("Beginning pipeline test")
+    logger.info("Beginning pipeline test")
 
     executor = build_executor(config.execute)
-    assert all([step.execute() for step in track(
-        executor, description="Running tests")]), "Pipeline Failure"
 
-    print("Pipeline OK")
+    with console.status("Testing Pipeline") as status:
+        assert all([step.execute() for step in executor]), "Pipeline Failure"
+
+    logger.info("Pipeline OK")

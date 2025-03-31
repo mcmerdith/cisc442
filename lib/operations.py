@@ -1,67 +1,16 @@
-from abc import abstractmethod
 import dataclasses
-from typing import Any, Literal, Self, TypeVar, Union, get_args, get_origin
-from cv2.typing import MatLike
+from abc import abstractmethod
 from dataclasses import dataclass, field
+from typing import Any, Self, TypeVar
 
 import numpy as np
+from cv2.typing import MatLike
+
 from lib.config import LogLevel
-from lib.image import convolve, expand, gaussianPyramid, laplacianPyramid, reconstruct, reduce
-from lib.util import load_image, load_kernel, log, save_image
-
-MatLikeArgs = set(get_args(MatLike))
-
-
-def type_name(dtype: type):
-    """
-    Get the most readable name for a type.
-
-    Mostly to make type hints for MatLike arguments more readable.
-
-    Args:
-        dtype (type): The type to get the name for.
-
-    Returns:
-        str: The name of the type.
-    """
-    base_type = get_origin(dtype)
-    if base_type is Union:
-        args = get_args(dtype)
-        argset = set(args)
-
-        # Strip out "MatLike"
-        has_image = argset & MatLikeArgs == MatLikeArgs
-        if has_image:
-            argset = argset - MatLikeArgs
-
-        type_str = ["None" if arg is None else arg.__name__
-                    for arg in args
-                    if arg in argset]
-
-        if has_image:
-            type_str.insert(0, "Pipe[Image]")
-
-        return " | ".join(type_str)
-    elif dtype is None:
-        return "None"
-    else:
-        return dtype.__name__
-
-
-def is_type(value: Any, dtype: type):
-    base_type = get_origin(dtype)
-    valid = False
-    if base_type is Literal:
-        # literal type comparison
-        valid = value in dtype.__args__
-    elif base_type is None or base_type is Union:
-        # simple type comparison
-        valid = isinstance(value, dtype)
-    else:
-        # fall back to really bad runtime type-checking
-        valid = isinstance(value, base_type)
-
-    return valid
+from lib.image import (convolve, expand, gaussianPyramid, laplacianPyramid,
+                       reconstruct, reduce)
+from lib.util import (is_type, load_image, load_kernel, logger, save_image,
+                      type_name)
 
 
 @dataclass(kw_only=True)
@@ -127,7 +76,7 @@ class Executable:
 
         required_type = self._fields.get("data", None)
         if required_type is not None and required_type is not Any:
-            if not isinstance(data, required_type):
+            if not is_type(data, required_type):
                 raise ValueError(
                     f"Invalid input type for {self.get_name()}: expected `{type_name(required_type)}`, got `{type_name(type(data))}` (broken pipe?)"
                 )
@@ -141,13 +90,14 @@ class Executable:
         Returns:
             str: The name of the operation.
         """
-        return type(self).__name__ + "[" + self._id + "]"
+        return type(self).__name__ + "-" + self._id
 
-    def print(self, *args, level=LogLevel.INFO, **kwargs):
-        log(self.get_name(), *args, level=level, **kwargs)
+    def info(self, *args, level=LogLevel.INFO, **kwargs):
+        logger.log(
+            level.value, f"[{self.get_name()}] {" ".join([str(arg) for arg in args])}", **kwargs)
 
-    def status(self, *args, **kwargs):
-        self.print(*args, level=LogLevel.DEBUG, **kwargs)
+    def debug(self, *args, **kwargs):
+        self.info(*args, level=LogLevel.DEBUG, **kwargs)
 
 
 def filter_keys(d: dict, keys: list[str], deny_list=False):
@@ -214,18 +164,18 @@ class LoadImage(Executable):
 
     def execute(self):
         super().execute()
-        self.status(f"Loading image: {self.name}")
+        self.info(f"Loading image: {self.name}")
         return load_image(self.name)
 
 
 @dataclass(kw_only=True)
 class SaveImage(Executable):
     name: str = None
-    data: MatLike = None
+    data: list[MatLike] | MatLike = None
 
     def execute(self):
         super().execute()
-        self.status(f"Saving image: {self.name}")
+        self.info(f"Saving image: {self.name}")
         save_image(self.data, self.name)
         return self.data
 
@@ -238,7 +188,7 @@ class Convolve(Executable):
 
     def execute(self):
         super().execute()
-        self.status(f"Convolving with kernel: {self.kernel}")
+        self.info(f"Convolving with kernel: {self.kernel}")
         if isinstance(self.kernel, str):
             self.kernel = load_kernel(self.kernel)
         return convolve(self.data, self.kernel, self.mode)
@@ -250,7 +200,7 @@ class Reduce(Executable):
 
     def execute(self):
         super().execute()
-        self.status(f"Reducing image")
+        self.info(f"Reducing image")
         return reduce(self.data)
 
 
@@ -260,7 +210,7 @@ class Expand(Executable):
 
     def execute(self):
         super().execute()
-        self.status(f"Expanding image")
+        self.info(f"Expanding image")
         return expand(self.data)
 
 
@@ -271,7 +221,7 @@ class LaplacianPyramid(Executable):
 
     def execute(self):
         super().execute()
-        self.status(f"Computing Laplacian Pyramid with {self.levels} levels")
+        self.info(f"Computing Laplacian Pyramid with {self.levels} levels")
         return laplacianPyramid(self.data, self.levels)
 
 
@@ -282,18 +232,18 @@ class GaussianPyramid(Executable):
 
     def execute(self):
         super().execute()
-        self.status(f"Computing Gaussian Pyramid with {self.levels} levels")
+        self.info(f"Computing Gaussian Pyramid with {self.levels} levels")
         return gaussianPyramid(self.data, self.levels)
 
 
 @dataclass(kw_only=True)
 class Reconstruct(Executable):
     levels: int = None
-    data: MatLike = None
+    data: list[MatLike] = None
 
     def execute(self):
         super().execute()
-        self.status(f"Reconstructing image with {self.levels} levels")
+        self.info(f"Reconstructing image with {self.levels} levels")
         return reconstruct(self.data, self.levels)
 
 
@@ -308,6 +258,6 @@ class Compare(Executable):
         if isinstance(self.reference, str):
             self.reference = load_image(self.reference, test=self.test)
 
-        self.print("Difference is", np.sum(np.abs(self.reference - self.data)))
+        self.info("Difference is", np.sum(np.abs(self.reference - self.data)))
 
         return np.allclose(self.reference, self.data)
