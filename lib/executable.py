@@ -7,11 +7,12 @@ import numpy as np
 from cv2.typing import MatLike
 
 from lib.config import LogLevel
-from lib.gui import PointSelector
+from lib.gui import PointSelectorGui, ShowImageGui
 from lib.image import (convolve, expand_image, gaussian_pyramid, laplacian_pyramid, mosaic_images,
                        reconstruct, reduce_image)
-from lib.util import (is_type, load_image, load_kernel, logger, save_image, show_image,
+from lib.util import (is_type, load_image, load_kernel, logger, save_image,
                       type_name)
+                      
 
 
 @dataclass(kw_only=True)
@@ -91,11 +92,12 @@ class Executable:
         Returns:
             str: The name of the operation.
         """
-        return type(self).__name__ + "-" + self._id
+        return self._id + "-" + type(self).__name__
 
     def info(self, *args, level=LogLevel.INFO, **kwargs):
         logger.log(
-            level.value, f"[{self.get_name()}] {" ".join([str(arg) for arg in args])}", **kwargs)
+            level.value, f"[{self.get_name()}] {' '.join([str(arg) for arg in args])}", **kwargs
+        )
 
     def debug(self, *args, **kwargs):
         self.info(*args, level=LogLevel.DEBUG, **kwargs)
@@ -192,7 +194,7 @@ class ShowImage(Executable):
     def execute(self):
         super().execute()
         self.info(f"Showing image")
-        show_image(self.data)
+        ShowImageGui(image=self.data).init()
         return self.data
 
 

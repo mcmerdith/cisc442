@@ -25,18 +25,6 @@ def init(config: Config):
     logger.setLevel(config.options.log_level.value)
 
 
-def show_image(image: MatLike | list[MatLike]):
-    """
-    Show an image.
-
-    Args:
-        image (MatLike): The image to show
-    """
-    cv.imshow("Image", image)
-    cv.waitKey(0)
-    cv.destroyWindow("Image")
-
-
 def save_image(image: list[MatLike] | MatLike, name: str):
     """
     Save an image to the output directory.

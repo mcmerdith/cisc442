@@ -21,7 +21,7 @@ class Pipeline(Executable):
         if pipeline:
             # build the pipeline
             self.pipeline = [build_operation(
-                op, id=f"{index}@{i}") for i, op in enumerate(pipeline)]
+                op, id=f"{index}.{i}") for i, op in enumerate(pipeline)]
 
         elif "operation" in kwargs:
             # build a pipelinee from a single operation
@@ -32,20 +32,20 @@ class Pipeline(Executable):
 
         # add the loading and saving steps
         self.pipeline.insert(0, LoadImage(
-            name=kwargs["source"], _id=f"{index}.load"
+            name=kwargs["source"], _id=f"{index}"
         ))
 
         # add the saving step
         if "output" in kwargs:
             self.pipeline.append(
-                SaveImage(name=kwargs["output"], _id=f"{index}.save")
+                SaveImage(name=kwargs["output"], _id=f"{index}")
             )
 
         # add the comparison step
         if "test" in kwargs:
             self.pipeline.append(
                 Compare(reference=kwargs["test"],
-                        test=True, _id=f"{index}.test")
+                        test=True, _id=f"{index}:TEST")
             )
 
     def execute(self):

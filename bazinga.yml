@@ -8,6 +8,6 @@ options:
     log_level: INFO
 execute:
     - operation: mosaic
-      source: Test_D1.png
-      source2: Test_D2.png
+      source: Test_A1.png
+      source2: Test_A2.png
       output: BUSTED.png

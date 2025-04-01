@@ -2,7 +2,8 @@ import cv2 as cv
 import numpy as np
 from cv2.typing import MatLike
 
-from lib.util import gaussian_kernel_1d, save_image, show_image
+from lib.util import gaussian_kernel_1d, save_image
+from lib.gui import ShowImageGui
 
 
 def convolve(I: MatLike, H: MatLike, mode='reflect') -> MatLike:
@@ -175,61 +176,6 @@ def reconstruct(LI: list[MatLike], n):
     return current_level
 
 
-def align_images(I: MatLike, J: MatLike, points1: np.ndarray, points2: np.ndarray):
-    """
-    Align two images using the method described in the paper.
-
-    Args:
-        I (MatLike): The first image
-        J (MatLike): The second image
-        points1 (np.ndarray): The first image's matching points
-        points2 (np.ndarray): The second image's matching points
-
-    Returns:
-        MatLike: The second image aligned to the first image
-    """
-
-    points1 = np.array(points1, dtype=np.float32)
-    points2 = np.array(points2, dtype=np.float32)
-
-    # Compute homography matrix
-    H, mask = cv.findHomography(points2, points1, method=cv.RANSAC)
-
-    # Warp img2 to img1's perspective
-    height, width = I.shape[:2]
-    aligned_img2 = cv.warpPerspective(J, H, (width, height))
-
-    return aligned_img2
-
-
-def compute_overlap_mask(img1, img2):
-    """
-    Computes a smooth mask for blending based on overlapping non-zero regions of two images.
-
-    Args:
-        img1: First image (base).
-        img2: Second image (aligned to img1).
-
-    Returns:
-        Smooth transition mask (float32, single channel, range [0, 255]).
-    """
-    # Convert to grayscale if needed
-    if img1.ndim == 3:
-        gray1 = cv.cvtColor(img1, cv.COLOR_BGR2GRAY)
-    else:
-        gray1 = img1
-    if img2.ndim == 3:
-        gray2 = cv.cvtColor(img2, cv.COLOR_BGR2GRAY)
-    else:
-        gray2 = img2
-
-    # Create binary masks where content exists
-    mask1 = (gray1 > 10).astype(np.uint8)
-    mask2 = (gray2 > 10).astype(np.uint8)
-
-    return cv.cvtColor(np.where(mask1 & mask2, 0.5, 1), cv.COLOR_GRAY2BGR)
-
-
 def mosaic_images(left: MatLike, right: MatLike, p1: np.ndarray = None, p2: np.ndarray = None):
     """
     Mosaic two images together.
@@ -277,40 +223,27 @@ def mosaic_images(left: MatLike, right: MatLike, p1: np.ndarray = None, p2: np.n
 
     # cv.resize(dst, (w, h), interpolation=cv.INTER_CUBIC)
 
-    show_image(cv.drawMatches(left, kp1, right,
-               kp2, good, None))
-    # show_image(np.hstack((left, dst)))
-    show_image(output)
+    ShowImageGui(image=[cv.drawMatches(left, kp1, right,
+               kp2, good, None), output]).init()
 
     return output
 
-    # img2 = cv.polylines(img2, [np.int32(dst)], True, 255, 3, cv.LINE_AA)
-
-    # aligned_img2 = align_images(left, right, p1, p2)
-
-    # Step 4: Compute a mask automatically from overlap
-    # mask = compute_overlap_mask(I, aligned_img2)
     mask = np.zeros_like(left)
     mask.fill(0.5)
 
-    print(mask.shape)
     gp = [np.atleast_3d(gpl) for gpl in gaussian_pyramid(mask, 5)]
     lp1 = laplacian_pyramid(left, 5)
     lp2 = laplacian_pyramid(aligned_img2, 5)
 
     save_image(mask, "MASK.png")
 
-    # for i in range(5):
-    #     show_image(np.hstack((gp[i] * lp1[i], (1 - gp[i]) * lp2[i])))
-
-    # return
-
     # Blend pyramids
     blended_pyramid = []
     for i in range(5):
         l = gp[i] * lp1[i] + (1 - gp[i]) * lp2[i]
         blended_pyramid.append(l)
-        save_image(np.hstack((lp1[i], gp[i], lp2[i])), f"LP{i}.png")
+    
+    ShowImageGui(image=blended_pyramid).init()
 
     # Reconstruct image
     blended = reconstruct(blended_pyramid, 5)
