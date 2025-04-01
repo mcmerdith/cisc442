@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from lib.operations import Executable, build_operation
+from lib.executable import Compare, Executable, LoadImage, SaveImage, build_operation
 
 
 @dataclass(init=False, kw_only=True)
@@ -31,25 +31,22 @@ class Pipeline(Executable):
             raise ValueError(f"Illegal pipeline (no operations): {kwargs}")
 
         # add the loading and saving steps
-        self.pipeline.insert(0, build_operation(
-            {"operation": "loadImage", "name": kwargs["source"]},
-            id=f"{index}@load"
+        self.pipeline.insert(0, LoadImage(
+            name=kwargs["source"], _id=f"{index}.load"
         ))
 
         # add the saving step
         if "output" in kwargs:
-            self.pipeline.append(build_operation(
-                {"operation": "saveImage", "name": kwargs["output"]},
-                id=f"{index}@save"
-            ))
+            self.pipeline.append(
+                SaveImage(name=kwargs["output"], _id=f"{index}.save")
+            )
 
         # add the comparison step
         if "test" in kwargs:
-            self.pipeline.append(build_operation({
-                "operation": "compare",
-                "reference": kwargs["test"],
-                "test": True
-            }, id=f"{index}@test"))
+            self.pipeline.append(
+                Compare(reference=kwargs["test"],
+                        test=True, _id=f"{index}.test")
+            )
 
     def execute(self):
         super().execute()

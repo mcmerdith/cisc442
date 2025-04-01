@@ -1,7 +1,7 @@
 
 from lib.config import Config, read_config
 from lib import util
-from lib.executors import build_executor
+from lib.pipeline import build_executor
 from lib.testing import test
 from argparse import ArgumentParser
 from rich.progress import track

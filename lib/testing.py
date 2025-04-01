@@ -1,9 +1,9 @@
 import cv2 as cv
 import numpy as np
 from lib.config import Config
-from lib.executors import build_executor
+from lib.pipeline import build_executor
 from lib.util import gaussian_kernel_1d, load_image, save_image, logger, console
-from lib.image import convolve, expand, reduce
+from lib.image import convolve, expand_image, reduce_image
 from rich.progress import track
 
 
@@ -61,7 +61,7 @@ def test_convolve():
 def test_reduce():
     image = load_image("lena.png")
 
-    reduced = reduce(image)
+    reduced = reduce_image(image)
     if SAVE_IMAGES:
         save_image(reduced, "test_reduced.png")
 
@@ -74,7 +74,7 @@ def test_reduce():
 def test_expand():
     image = load_image("lena.png")
 
-    expanded = expand(image)
+    expanded = expand_image(image)
     if SAVE_IMAGES:
         save_image(expanded, "test_expanded.png")
 

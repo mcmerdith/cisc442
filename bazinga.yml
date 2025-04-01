@@ -1,0 +1,13 @@
+options:
+    testing:
+        save_images: true
+    image_dir: images
+    kernel_dir: kernels
+    test_dir: test_input
+    output_dir: test_output
+    log_level: INFO
+execute:
+    - operation: mosaic
+      source: Test_D1.png
+      source2: Test_D2.png
+      output: BUSTED.png

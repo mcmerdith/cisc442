@@ -7,9 +7,10 @@ import numpy as np
 from cv2.typing import MatLike
 
 from lib.config import LogLevel
-from lib.image import (convolve, expand, gaussianPyramid, laplacianPyramid,
-                       reconstruct, reduce)
-from lib.util import (is_type, load_image, load_kernel, logger, save_image,
+from lib.gui import PointSelector
+from lib.image import (convolve, expand_image, gaussian_pyramid, laplacian_pyramid, mosaic_images,
+                       reconstruct, reduce_image)
+from lib.util import (is_type, load_image, load_kernel, logger, save_image, show_image,
                       type_name)
 
 
@@ -136,24 +137,28 @@ def build_operation(op: dict, id: str):
         raise ValueError("Operation not specified")
 
     match op["operation"]:
-        case "loadImage":
+        case "load_image":
             return LoadImage(**filter_keys(op, ["name"]), _id=id)
-        case "saveImage":
+        case "save_image":
             return SaveImage(**filter_keys(op, ["name"]), _id=id)
+        case "show_mage":
+            return ShowImage(**filter_keys(op, []), _id=id)
         case "convolve":
             return Convolve(**filter_keys(op, ["kernel", "mode"]), _id=id)
         case "reduce":
             return Reduce(**filter_keys(op, []), _id=id)
         case "expand":
             return Expand(**filter_keys(op, []), _id=id)
-        case "gaussianPyramid":
+        case "gaussian_pyramid":
             return GaussianPyramid(**filter_keys(op, ["levels"]), _id=id)
-        case "laplacianPyramid":
+        case "laplacian_pyramid":
             return LaplacianPyramid(**filter_keys(op, ["levels"]), _id=id)
         case "reconstruct":
             return Reconstruct(**filter_keys(op, ["levels"]), _id=id)
         case "compare":
             return Compare(**filter_keys(op, ["reference", "test"]), _id=id)
+        case "mosaic":
+            return Mosaic(**filter_keys(op, ["source2"]), _id=id)
         case _:
             raise ValueError(f"Unknown operation: {op['operation']}")
 
@@ -181,6 +186,17 @@ class SaveImage(Executable):
 
 
 @dataclass(kw_only=True)
+class ShowImage(Executable):
+    data: MatLike = None
+
+    def execute(self):
+        super().execute()
+        self.info(f"Showing image")
+        show_image(self.data)
+        return self.data
+
+
+@dataclass(kw_only=True)
 class Convolve(Executable):
     kernel: str | MatLike = None
     data: MatLike = None
@@ -201,7 +217,7 @@ class Reduce(Executable):
     def execute(self):
         super().execute()
         self.info(f"Reducing image")
-        return reduce(self.data)
+        return reduce_image(self.data)
 
 
 @dataclass(kw_only=True)
@@ -211,7 +227,7 @@ class Expand(Executable):
     def execute(self):
         super().execute()
         self.info(f"Expanding image")
-        return expand(self.data)
+        return expand_image(self.data)
 
 
 @dataclass(kw_only=True)
@@ -222,7 +238,7 @@ class LaplacianPyramid(Executable):
     def execute(self):
         super().execute()
         self.info(f"Computing Laplacian Pyramid with {self.levels} levels")
-        return laplacianPyramid(self.data, self.levels)
+        return laplacian_pyramid(self.data, self.levels)
 
 
 @dataclass(kw_only=True)
@@ -233,7 +249,7 @@ class GaussianPyramid(Executable):
     def execute(self):
         super().execute()
         self.info(f"Computing Gaussian Pyramid with {self.levels} levels")
-        return gaussianPyramid(self.data, self.levels)
+        return gaussian_pyramid(self.data, self.levels)
 
 
 @dataclass(kw_only=True)
@@ -261,3 +277,37 @@ class Compare(Executable):
         self.info("Difference is", np.sum(np.abs(self.reference - self.data)))
 
         return np.allclose(self.reference, self.data)
+
+
+@dataclass(kw_only=True)
+class Mosaic(Executable):
+    data: MatLike = None
+    source2: MatLike | str = None
+
+    def execute(self):
+        super().execute()
+        self.info(f"Mosaicing images")
+        if isinstance(self.source2, str):
+            self.source2 = load_image(self.source2)
+
+        # p1 = [(261, 90), (377, 90), (194, 128),
+        #       (447, 129), (175, 152), (465, 150)]
+        # p2 = [(209, 125), (291, 124), (152, 152),
+        #       (327, 151), (136, 168), (335, 167)]
+
+        # selector = PointSelector(self.data)
+        # selector2 = PointSelector(self.source2)
+
+        # selector.show()
+        # selector2.show()
+
+        # print(selector.points)
+        # print(selector2.points)
+
+        # mosaic = mosaic_images(self.data, self.source2,
+
+        mosaic = mosaic_images(self.data, self.source2)
+        #                        np.array(p1), np.array(p2))
+        # save_image(mosaic)
+
+        return mosaic
