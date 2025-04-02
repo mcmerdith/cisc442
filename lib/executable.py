@@ -296,7 +296,7 @@ class Mosaic(Executable):
         # p2 = [(209, 125), (291, 124), (152, 152),
         #       (327, 151), (136, 168), (335, 167)]
 
-        matcher = PointMatcherGui(image=(self.source1, self.source2)).init()
+        matcher = PointMatcherGui(images=(self.data, self.source2)).init()
 
         p1, p2 = matcher.points
 
