@@ -9,18 +9,22 @@ PROCEED = " "
 UNDO = "u"
 REDO = "z"
 
+
 @dataclass(kw_only=True)
 class GuiWindow:
     name: str
     timeout: int = None
 
     def __post_init__(self):
-        cv.setMouseCallback(self.name, self.handle_click)
+        pass
 
     def init(self):
         self.destroyed = False
         self.show()
-        self.run()
+        if not self.defer:
+            cv.setMouseCallback(self.name, self.handle_click)
+            self.run()
+
         return self
 
     def show(self):
@@ -41,7 +45,7 @@ class GuiWindow:
             self.destroy()
             exit(0)
 
-    def handle_click(self, x, y, flags, param):
+    def handle_click(self, event, x, y, flags, param):
         pass
 
     def run(self):
@@ -55,29 +59,56 @@ class GuiWindow:
             try:
                 self.handle_key(chr(key))
             except:
-                pass # invalid or no key
+                pass  # invalid or no key
 
             if self.timeout is not None and time() - opened > (self.timeout / 1000):
                 # window is now too old
                 self.destroy()
 
+
 @dataclass(kw_only=True)
-class PointSelectorGui(GuiWindow):
+class PointMatcherGui(GuiWindow):
     name = "Select points"
-    image: MatLike
+    image: tuple[MatLike, MatLike]
 
     def __post_init__(self):
-        self.points = []
+        self.defer = True
+        self.window1_name = self.name + " (left)"
+        self.window2 = self.name + " (right)"
+        self.points = ([], [])
+
+    def init(self):
+        super().init()
+        # setup handlers for both windows
+        cv.setMouseCallback(self.window1_name,
+                            lambda *args: self.handle_click(*args, idx=0))
+        cv.setMouseCallback(self.window2_name,
+                            lambda *args: self.handle_click(*args, idx=1))
+        # run the main loop
+        self.run()
+        return self
 
     def show(self):
-        cv.imshow(self.window_name, self.image)
-        cv.setMouseCallback(self.window_name, self.mouse_click)
+        cv.imshow(self.window1_name, self.image[0])
+        cv.imshow(self.window2, self.image[1])
 
-    def mouse_click(self, event, x, y, flags, param):
+    def handle_key(self, key: str):
+        # safeguard proceeding without the right number of points
+        if key == PROCEED and len(self.points[0]) != len(self.points[1]):
+            return
+        super().handle_key(key)
+
+    def handle_click(self, event, x, y, flags, param, *, idx: int):
         if event == cv.EVENT_LBUTTONDOWN:
-            self.points.append((x, y))
-            self.image = cv.circle(self.image, (x, y), 5, (0, 0, 255), -1)
-            cv.imshow(self.window_name, self.image)
+            # safeguard adding a point without a match in the other image
+            if len(self.points[0]) != len(self.points[1]):
+                return
+
+            self.points[idx].append((x, y))
+            self.image[idx] = cv.circle(
+                self.image[idx], (x, y), 5, (0, 0, 255 / len(self.points[idx])), -1)
+            self.show()
+
 
 @dataclass(kw_only=True)
 class ShowImageGui(GuiWindow):
@@ -93,7 +124,7 @@ class ShowImageGui(GuiWindow):
 
     def show(self):
         cv.imshow(self.name, self.image[self.index])
-    
+
     def handle_key(self, key: str):
         super().handle_key(key)
         if key == "l":

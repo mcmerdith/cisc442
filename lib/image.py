@@ -210,6 +210,10 @@ def mosaic_images(left: MatLike, right: MatLike, p1: np.ndarray = None, p2: np.n
             [kp1[m.queryIdx].pt for m in good]).reshape(-1, 1, 2)
         p2 = np.float32(
             [kp2[m.trainIdx].pt for m in good]).reshape(-1, 1, 2)
+
+        ShowImageGui(image=cv.drawMatches(
+            left, kp1, right, kp2, good, None)).init()
+
         # p1 = cv.cornerHarris(left, 2, 3, 0.04)
         # p2 = cv.cornerHarris(right, 2, 3, 0.04)
 
@@ -223,8 +227,7 @@ def mosaic_images(left: MatLike, right: MatLike, p1: np.ndarray = None, p2: np.n
 
     # cv.resize(dst, (w, h), interpolation=cv.INTER_CUBIC)
 
-    ShowImageGui(image=[cv.drawMatches(left, kp1, right,
-               kp2, good, None), output]).init()
+    ShowImageGui(image=output).init()
 
     return output
 
@@ -242,7 +245,7 @@ def mosaic_images(left: MatLike, right: MatLike, p1: np.ndarray = None, p2: np.n
     for i in range(5):
         l = gp[i] * lp1[i] + (1 - gp[i]) * lp2[i]
         blended_pyramid.append(l)
-    
+
     ShowImageGui(image=blended_pyramid).init()
 
     # Reconstruct image

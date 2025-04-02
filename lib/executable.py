@@ -7,12 +7,11 @@ import numpy as np
 from cv2.typing import MatLike
 
 from lib.config import LogLevel
-from lib.gui import PointSelectorGui, ShowImageGui
+from lib.gui import PointMatcherGui, ShowImageGui
 from lib.image import (convolve, expand_image, gaussian_pyramid, laplacian_pyramid, mosaic_images,
                        reconstruct, reduce_image)
 from lib.util import (is_type, load_image, load_kernel, logger, save_image,
                       type_name)
-                      
 
 
 @dataclass(kw_only=True)
@@ -297,6 +296,10 @@ class Mosaic(Executable):
         # p2 = [(209, 125), (291, 124), (152, 152),
         #       (327, 151), (136, 168), (335, 167)]
 
+        matcher = PointMatcherGui(image=(self.source1, self.source2)).init()
+
+        p1, p2 = matcher.points
+
         # selector = PointSelector(self.data)
         # selector2 = PointSelector(self.source2)
 
@@ -308,8 +311,8 @@ class Mosaic(Executable):
 
         # mosaic = mosaic_images(self.data, self.source2,
 
-        mosaic = mosaic_images(self.data, self.source2)
-        #                        np.array(p1), np.array(p2))
+        mosaic = mosaic_images(self.data, self.source2,
+                               np.array(p1), np.array(p2))
         # save_image(mosaic)
 
         return mosaic
