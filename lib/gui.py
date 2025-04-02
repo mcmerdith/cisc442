@@ -22,8 +22,15 @@ class GuiWindow:
     def init(self):
         self.destroyed = False
         self.show()
-        if not self.defer:
+
+        if self.windows:
+            for i, window in enumerate(self.windows):
+                cv.setMouseCallback(
+                    window, lambda *args: self.handle_click(*args, idx=i))
+        else:
             cv.setMouseCallback(self.name, self.handle_click)
+
+        if not self.defer:
             self.run()
 
         return self
@@ -52,7 +59,7 @@ class GuiWindow:
             logger.info("User requested exit")
             exit(0)
 
-    def handle_click(self, event, x, y, flags, param):
+    def handle_click(self, event, x, y, flags, param, *, idx=0):
         pass
 
     def run(self):
@@ -76,29 +83,16 @@ class GuiWindow:
 @dataclass(kw_only=True)
 class PointMatcherGui(GuiWindow):
     name: str = "Select points"
-    images: tuple[MatLike, MatLike]
+    images: list[MatLike]
 
     def __post_init__(self):
         super().__post_init__()
-        self.defer = True
         self.windows = [self.name + " (left)", self.name + " (right)"]
         self.points = [[], []]
-        self._images = list(self.images)
-
-    def init(self):
-        super().init()
-        # setup handlers for both windows
-        cv.setMouseCallback(self.windows[0],
-                            lambda *args: self.handle_click(*args, idx=0))
-        cv.setMouseCallback(self.windows[1],
-                            lambda *args: self.handle_click(*args, idx=1))
-        # run the main loop
-        self.run()
-        return self
 
     def show(self):
-        cv.imshow(self.windows[0], self._images[0])
-        cv.imshow(self.windows[1], self._images[1])
+        cv.imshow(self.windows[0], self.images[0])
+        cv.imshow(self.windows[1], self.images[1])
 
     def handle_key(self, key: str):
         # safeguard proceeding without the right number of points
@@ -113,8 +107,8 @@ class PointMatcherGui(GuiWindow):
                 return
 
             self.points[idx].append((x, y))
-            self._images[idx] = cv.circle(
-                self._images[idx], (x, y), 5, (255 - (255 / len(self.points[idx])), 0, 255 / len(self.points[idx])), -1)
+            self.images[idx] = cv.circle(
+                self.images[idx], (x, y), 5, (255 - (255 / len(self.points[idx])), 0, 255 / len(self.points[idx])), -1)
             self.show()
 
 
