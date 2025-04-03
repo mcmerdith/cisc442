@@ -159,7 +159,7 @@ def build_operation(op: dict, id: str):
         case "compare":
             return Compare(**filter_keys(op, ["reference", "test"]), _id=id)
         case "mosaic":
-            return Mosaic(**filter_keys(op, ["source2"]), _id=id)
+            return Mosaic(**filter_keys(op, ["source2", "points", "points2"]), _id=id)
         case _:
             raise ValueError(f"Unknown operation: {op['operation']}")
 
@@ -285,7 +285,10 @@ class Compare(Executable):
 @dataclass(kw_only=True)
 class Mosaic(Executable):
     data: MatLike = None
+    points: list[list[int]] = None
     source2: MatLike | str = None
+    points2: list[list[int]] = None
+    interactive: bool = False
 
     def execute(self):
         super().execute()
@@ -293,29 +296,13 @@ class Mosaic(Executable):
         if isinstance(self.source2, str):
             self.source2 = load_image(self.source2)
 
-        p1, p2 = None, None
-
-        if True:
-            p1 = np.array([[36, 168],
-                           [98, 174],
-                           [260,  91],
-                           [383,  90],
-                           [546, 169],
-                           [606, 159],
-                           [602, 237],
-                           [233, 244]])
-            p2 = np.array([[62, 179],
-                           [97, 183],
-                           [209, 127],
-                           [296, 124],
-                           [406, 182],
-                           [454, 174],
-                           [352, 236],
-                           [87, 230]])
-        elif False:  # add condition
+        if self.points and self.points2:
+            p1, p2 = np.array(self.points), np.array(self.points2)
+        else:
             matcher = PointMatcherGui(images=[self.data, self.source2]).init()
             p1, p2 = np.array(matcher.points[0]), np.array(matcher.points[1])
 
+        assert p1.shape == p2.shape and p1.shape[1] == 2, "Points must be the same length"
         mosaic = mosaic_images(self.data, self.source2, p1, p2)
 
         return mosaic
