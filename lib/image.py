@@ -176,6 +176,64 @@ def reconstruct(LI: list[MatLike], n):
     return current_level
 
 
+def match_images(left: MatLike, right: MatLike):
+    """
+    Find the matching points between two images.
+
+    Args:
+        left (MatLike): The left image
+        right (MatLike): The right image
+
+    Returns:
+        np.ndarray: The left image's matching points
+    """
+
+    sift = cv.SIFT_create()
+    flann = cv.FlannBasedMatcher(
+        {"algorithm": 1, "trees": 5}, {"checks": 50})
+
+    kp1, des1 = sift.detectAndCompute(left, None)
+    kp2, des2 = sift.detectAndCompute(right, None)
+
+    matches = flann.knnMatch(des1, des2, k=2)
+
+    good = []
+    for m, n in matches:
+        if m.distance < 0.7*n.distance:
+            good.append(m)
+
+    assert len(good) > 10, f"Not enough matches are found - {len(good)}/10"
+    p1 = np.float32(
+        [kp1[m.queryIdx].pt for m in good]).reshape(-1, 1, 2)
+    p2 = np.float32(
+        [kp2[m.trainIdx].pt for m in good]).reshape(-1, 1, 2)
+
+    return p1, p2
+
+
+def align_image(left: MatLike, right: MatLike, p1: np.ndarray, p2: np.ndarray):
+    """
+    Align the right image to the left image.
+
+    Args:
+        left (MatLike): The left image
+        right (MatLike): The right image
+        p1 (np.ndarray): The left image's matching points
+        p2 (np.ndarray): The right image's matching points
+
+    Returns:
+        MatLike: The right image aligned to the left image
+    """
+
+    M, mask = cv.findHomography(p2, p1, cv.RANSAC)
+
+    h, w = left.shape[:2]
+
+    aligned = cv.warpPerspective(right, M, (w, h))
+
+    return aligned
+
+
 def mosaic_images(left: MatLike, right: MatLike, p1: np.ndarray = None, p2: np.ndarray = None):
     """
     Mosaic two images together.
@@ -191,45 +249,17 @@ def mosaic_images(left: MatLike, right: MatLike, p1: np.ndarray = None, p2: np.n
     """
 
     if p1 is None or p2 is None:
-        sift = cv.SIFT_create()
-        flann = cv.FlannBasedMatcher(
-            {"algorithm": 1, "trees": 5}, {"checks": 50})
-
-        kp1, des1 = sift.detectAndCompute(left, None)
-        kp2, des2 = sift.detectAndCompute(right, None)
-
-        matches = flann.knnMatch(des1, des2, k=2)
-
-        good = []
-        for m, n in matches:
-            if m.distance < 0.7*n.distance:
-                good.append(m)
-
-        assert len(good) > 10, f"Not enough matches are found - {len(good)}/10"
-        p1 = np.float32(
-            [kp1[m.queryIdx].pt for m in good]).reshape(-1, 1, 2)
-        p2 = np.float32(
-            [kp2[m.trainIdx].pt for m in good]).reshape(-1, 1, 2)
+        p1, p2 = match_images(left, right)
 
         ShowImageGui(image=cv.drawMatches(
             left, kp1, right, kp2, good, None)).init()
 
-        # p1 = cv.cornerHarris(left, 2, 3, 0.04)
-        # p2 = cv.cornerHarris(right, 2, 3, 0.04)
+    aligned_right = align_image(left, right, p1, p2)
+    blended = cv.addWeighted(left, 0.5, aligned_right, 0.5, 0)
 
-    M, mask = cv.findHomography(p1, p2, cv.RANSAC, 5.0)
+    ShowImageGui(image=[np.hstack((left, aligned_right)), blended]).init()
 
-    h, w = left.shape[:2]
-    pts = np.float32([[0, 0], [0, h-1], [w-1, h-1], [w-1, 0]]
-                     ).reshape(-1, 1, 2)
-
-    output = np.hstack((left, cv.warpPerspective(right, M, (w, h))))
-
-    # cv.resize(dst, (w, h), interpolation=cv.INTER_CUBIC)
-
-    ShowImageGui(image=output).init()
-
-    return output
+    return blended
 
     mask = np.zeros_like(left)
     mask.fill(0.5)

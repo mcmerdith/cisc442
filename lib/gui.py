@@ -25,8 +25,8 @@ class GuiWindow:
 
         if self.windows:
             for i, window in enumerate(self.windows):
-                cv.setMouseCallback(
-                    window, lambda *args: self.handle_click(*args, idx=i))
+                cv.setMouseCallback(window, lambda *args,
+                                    idx=i: self.handle_click(*args, idx=idx))
         else:
             cv.setMouseCallback(self.name, self.handle_click)
 
@@ -59,7 +59,7 @@ class GuiWindow:
             logger.info("User requested exit")
             exit(0)
 
-    def handle_click(self, event, x, y, flags, param, *, idx=0):
+    def handle_click(self, event: int, x: int, y: int, flags: int, param, *, idx: int = None):
         pass
 
     def run(self):
@@ -90,6 +90,16 @@ class PointMatcherGui(GuiWindow):
         self.windows = [self.name + " (left)", self.name + " (right)"]
         self.points = [[], []]
 
+    # def init(self):
+    #     self.defer = True
+    #     super().init()
+    #     cv.setMouseCallback(self.windows[0],
+    #                         lambda *args: self.handle_click(*args, idx=0))
+    #     cv.setMouseCallback(self.windows[1],
+    #                         lambda *args: self.handle_click(*args, idx=1))
+    #     self.run()
+    #     return self
+
     def show(self):
         cv.imshow(self.windows[0], self.images[0])
         cv.imshow(self.windows[1], self.images[1])
@@ -102,6 +112,7 @@ class PointMatcherGui(GuiWindow):
 
     def handle_click(self, event, x, y, flags, param, *, idx: int):
         if event == cv.EVENT_LBUTTONDOWN:
+            print(f"Clicked at {x}, {y} on {idx}")
             # safeguard adding a point without a match in the other image
             if len(self.points[idx]) > len(self.points[1 - idx]):
                 return
@@ -122,11 +133,11 @@ class ShowImageGui(GuiWindow):
         self.index = 0
         if not isinstance(self.image, list):
             self.image = [self.image]
-        if len(self.image) > 1:
-            self.name = f"{self.name} ({len(self.image)} images)"
 
     def show(self):
         cv.imshow(self.name, self.image[self.index])
+        cv.setWindowTitle(
+            self.name, f"{self.name} ({self.index+1}/{len(self.image)})")
 
     def handle_key(self, key: str):
         super().handle_key(key)
