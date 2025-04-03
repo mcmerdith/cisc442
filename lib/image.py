@@ -2,7 +2,7 @@ import cv2 as cv
 import numpy as np
 from cv2.typing import MatLike
 
-from lib.util import gaussian_kernel_1d, save_image
+from lib.util import gaussian_kernel_1d, load_kernel, save_image
 from lib.gui import ShowImageGui
 
 
@@ -18,6 +18,8 @@ def convolve(I: MatLike, H: MatLike, mode='reflect') -> MatLike:
     Returns:
         MatLike: The result of the convolution
     """
+
+    return cv.filter2D(I, -1, H, borderType=cv.BORDER_REFLECT)
 
     # accomodate grayscale and color images
     is_color = I.ndim == 3
@@ -59,9 +61,32 @@ def convolve(I: MatLike, H: MatLike, mode='reflect') -> MatLike:
                 )
 
     # clip to valid range [0, 255] and cast to uint8
-    output = np.clip(output, 0, 255).astype(np.uint8)
+    # output = np.clip(output, 0, 255).astype(np.uint8)
 
     return output
+
+
+def gaussian_blur(I: MatLike, sigma: float = 1.0):
+    """
+    Apply a Gaussian blur to an image.
+
+    Args:
+        I (MatLike): The input image in the shape (height, width, [channels])
+        sigma (float): The standard deviation of the Gaussian kernel
+
+    Returns:
+        MatLike: The result of the convolution
+    """
+
+    gaussian_1d = gaussian_kernel_1d(5, sigma=sigma)
+
+    vertical_gaussian = gaussian_1d.reshape(-1, 1)
+    smoothed = convolve(I, vertical_gaussian)
+
+    horizontal_gaussian = gaussian_1d.reshape(1, -1)
+    smoothed = convolve(smoothed, horizontal_gaussian)
+
+    return smoothed
 
 
 def reduce_image(I: MatLike):
@@ -77,13 +102,7 @@ def reduce_image(I: MatLike):
         MatLike: The reduced image
     """
 
-    gaussian_1d = gaussian_kernel_1d(5)
-
-    vertical_gaussian = gaussian_1d.reshape(-1, 1)
-    smoothed = convolve(I, vertical_gaussian)
-
-    horizontal_gaussian = gaussian_1d.reshape(1, -1)
-    smoothed = convolve(smoothed, horizontal_gaussian)
+    smoothed = gaussian_blur(I)
 
     reduced = cv.resize(
         smoothed, (I.shape[1] // 2, I.shape[0] // 2), interpolation=cv.INTER_AREA
@@ -188,21 +207,43 @@ def match_images(left: MatLike, right: MatLike):
         np.ndarray: The left image's matching points
     """
 
+    # preprocess with canny
+    g_left = cv.cvtColor(left, cv.COLOR_BGR2GRAY)
+    g_right = cv.cvtColor(right, cv.COLOR_BGR2GRAY)
+    proc_left = g_left
+    proc_right = g_right
+    # proc_left = laplacian_pyramid(g_left, 3)[-2]
+    # proc_right = laplacian_pyramid(g_right, 3)[-2]
+    # proc_left = cv.Canny(gaussian_blur(g_left), 100, 200)
+    # proc_right = cv.Canny(gaussian_blur(g_right), 100, 200)
+
+    ShowImageGui(image=[proc_left, proc_right]).init()
+
     sift = cv.SIFT_create()
     flann = cv.FlannBasedMatcher(
-        {"algorithm": 1, "trees": 5}, {"checks": 50})
+        {"algorithm": 1, "trees": 5})
+    # orb = cv.ORB_create()
+    # bf = cv.BFMatcher(cv.NORM_HAMMING, crossCheck=True)
 
-    kp1, des1 = sift.detectAndCompute(left, None)
-    kp2, des2 = sift.detectAndCompute(right, None)
+    kp1, des1 = sift.detectAndCompute(proc_left, None)
+    kp2, des2 = sift.detectAndCompute(proc_right, None)
+    # kp1, des1 = orb.detectAndCompute(left, None)
+    # kp2, des2 = orb.detectAndCompute(right, None)
 
     matches = flann.knnMatch(des1, des2, k=2)
+    # matches = bf.match(des1, des2)
 
     good = []
     for m, n in matches:
         if m.distance < 0.7*n.distance:
             good.append(m)
 
-    assert len(good) > 10, f"Not enough matches are found - {len(good)}/10"
+    # good = sorted(good, key=lambda m: np.abs(m.distance-n.distance))[:5]
+
+    ShowImageGui(image=cv.drawMatches(
+        proc_left, kp1, proc_right, kp2, good, None)).init()
+
+    assert len(good) > 4, f"Not enough matches are found - {len(good)}/4"
     p1 = np.float32(
         [kp1[m.queryIdx].pt for m in good]).reshape(-1, 1, 2)
     p2 = np.float32(
@@ -225,16 +266,45 @@ def align_image(left: MatLike, right: MatLike, p1: np.ndarray, p2: np.ndarray):
         MatLike: The right image aligned to the left image
     """
 
-    M, mask = cv.findHomography(p2, p1, cv.RANSAC)
+    M, mask = cv.findHomography(
+        p2.astype(np.float32), p1.astype(np.float32), cv.LMEDS, 5.0)
+    # M, mask = cv.estimateAffine2D(p2.astype(np.float32), p1.astype(
+    #     np.float32), method=cv.RANSAC, ransacReprojThreshold=5.0)
+    matchesMask = mask.ravel().tolist()
 
-    h, w = left.shape[:2]
+    assert M is not None, f"No homography found"
 
-    aligned = cv.warpPerspective(right, M, (w, h))
+    lh, lw = left.shape[:2]
+
+    h_right, w_right = right.shape[:2]
+    corners = np.array([
+        [0, 0],
+        [w_right, 0],
+        [w_right, h_right],
+        [0, h_right]
+    ], dtype=np.float32).reshape(-1, 1, 2)
+
+    warped_corners = cv.perspectiveTransform(corners, M)
+    x_min = np.floor(warped_corners[:, 0, 0].min()).astype(int)
+    x_max = np.ceil(warped_corners[:, 0, 0].max()).astype(int)
+
+    # x_offset = -x_min if x_min < 0 else 0
+
+    # T = np.array([
+    #     [1, 0, x_offset],
+    #     [0, 1, 0],
+    #     [0, 0, 1]
+    # ], dtype=np.float32)
+
+    # H_adjusted = T @ M
+
+    aligned = cv.warpPerspective(right, M, (x_max, lh))
+    # aligned = cv.warpAffine(right, M, (w, h))
 
     return aligned
 
 
-def mosaic_images(left: MatLike, right: MatLike, p1: np.ndarray = None, p2: np.ndarray = None):
+def mosaic_images(left: MatLike, right: MatLike, p1: np.ndarray = None, p2: np.ndarray = None, n=3):
     """
     Mosaic two images together.
 
@@ -251,33 +321,49 @@ def mosaic_images(left: MatLike, right: MatLike, p1: np.ndarray = None, p2: np.n
     if p1 is None or p2 is None:
         p1, p2 = match_images(left, right)
 
-        ShowImageGui(image=cv.drawMatches(
-            left, kp1, right, kp2, good, None)).init()
-
     aligned_right = align_image(left, right, p1, p2)
-    blended = cv.addWeighted(left, 0.5, aligned_right, 0.5, 0)
+    # blended = cv.addWeighted(left, 0.5, aligned_right, 0.5, 0)
 
-    ShowImageGui(image=[np.hstack((left, aligned_right)), blended]).init()
+    # ShowImageGui(
+    #     image=[left, aligned_right, right]).init()
 
-    return blended
+    # return aligned_right
+    lh, lw = left.shape[:2]
 
-    mask = np.zeros_like(left)
-    mask.fill(0.5)
+    canvas = np.ones_like(aligned_right)
+    canvas[:, :left.shape[1]] = left
 
-    gp = [np.atleast_3d(gpl) for gpl in gaussian_pyramid(mask, 5)]
-    lp1 = laplacian_pyramid(left, 5)
-    lp2 = laplacian_pyramid(aligned_img2, 5)
+    overlap_start = lw - 50
+    overlap_end = lw
 
-    save_image(mask, "MASK.png")
+    # compute blend mask
+    mask = np.zeros_like(canvas, dtype=np.float32)
+    mask[:, :overlap_start] = 1
+    # mask falloff
+    alpha = np.linspace(1, 0, overlap_end -
+                        overlap_start)[None, :, None]
+    # match image height
+    alpha = np.repeat(alpha, left.shape[0], axis=0)
+    # mask[:, :overlap_end] = alpha
+    alpha = np.repeat(alpha, 3, axis=2)  # (H, W, 3)
+    mask[:, overlap_start:overlap_end, :] = alpha
+
+    # pyramid time
+    gp = gaussian_pyramid(mask, n)
+    lp1 = laplacian_pyramid(canvas, n)
+    lp2 = laplacian_pyramid(aligned_right, n)
+
+    # ShowImageGui(image=gp).init()
 
     # Blend pyramids
     blended_pyramid = []
-    for i in range(5):
-        l = gp[i] * lp1[i] + (1 - gp[i]) * lp2[i]
+    for i in range(n):
+        l = (gp[i] * lp1[i]) + (1 - gp[i]) * lp2[i]
         blended_pyramid.append(l)
 
     ShowImageGui(image=blended_pyramid).init()
 
     # Reconstruct image
-    blended = reconstruct(blended_pyramid, 5)
+    blended = reconstruct(blended_pyramid, n).clip(0, 255).astype(np.uint8)
+    ShowImageGui(image=[blended, canvas, aligned_right]).init()
     return np.clip(blended, 0, 255).astype(np.uint8)

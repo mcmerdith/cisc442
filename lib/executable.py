@@ -293,32 +293,26 @@ class Mosaic(Executable):
 
         p1, p2 = None, None
 
-        if False:  # add condition
+        if True:
+            p1 = np.array([[36, 168],
+                           [98, 174],
+                           [260,  91],
+                           [383,  90],
+                           [546, 169],
+                           [606, 159],
+                           [602, 237],
+                           [233, 244]])
+            p2 = np.array([[62, 179],
+                           [97, 183],
+                           [209, 127],
+                           [296, 124],
+                           [406, 182],
+                           [454, 174],
+                           [352, 236],
+                           [87, 230]])
+        elif False:  # add condition
             matcher = PointMatcherGui(images=[self.data, self.source2]).init()
             p1, p2 = np.array(matcher.points[0]), np.array(matcher.points[1])
-        else:
-            p1 = np.array([[262,  91],
-                           [380,  91],
-                           [35, 168],
-                           [97, 175],
-                           [177, 153],
-                           [467, 150],
-                           [544, 169],
-                           [607, 159],
-                           [601, 237],
-                           [263, 243],
-                           [322, 139]])
-            p2 = np.array([[210, 127],
-                           [293, 123],
-                           [63, 180],
-                           [99, 185],
-                           [138, 171],
-                           [336, 169],
-                           [406, 183],
-                           [456, 176],
-                           [352, 234],
-                           [103, 231],
-                           [237, 162]])
 
         mosaic = mosaic_images(self.data, self.source2, p1, p2)
 

@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from time import time
 import cv2 as cv
 from cv2.typing import MatLike
-from lib.util import logger
+from lib.util import logger, normalize_u8
 
 QUIT = "q"
 PROCEED = " "
@@ -87,6 +87,7 @@ class PointMatcherGui(GuiWindow):
 
     def __post_init__(self):
         super().__post_init__()
+        self.images = [image.copy() for image in self.images]
         self.windows = [self.name + " (left)", self.name + " (right)"]
         self.points = [[], []]
 
@@ -112,7 +113,6 @@ class PointMatcherGui(GuiWindow):
 
     def handle_click(self, event, x, y, flags, param, *, idx: int):
         if event == cv.EVENT_LBUTTONDOWN:
-            print(f"Clicked at {x}, {y} on {idx}")
             # safeguard adding a point without a match in the other image
             if len(self.points[idx]) > len(self.points[1 - idx]):
                 return
@@ -135,7 +135,7 @@ class ShowImageGui(GuiWindow):
             self.image = [self.image]
 
     def show(self):
-        cv.imshow(self.name, self.image[self.index])
+        cv.imshow(self.name, normalize_u8(self.image[self.index]))
         cv.setWindowTitle(
             self.name, f"{self.name} ({self.index+1}/{len(self.image)})")
 

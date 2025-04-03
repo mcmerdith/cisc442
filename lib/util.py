@@ -25,6 +25,10 @@ def init(config: Config):
     logger.setLevel(config.options.log_level.value)
 
 
+def normalize_u8(I: MatLike):
+    return I.clip(0, 255).astype(np.uint8)
+
+
 def save_image(image: list[MatLike] | MatLike, name: str):
     """
     Save an image to the output directory.
@@ -37,9 +41,10 @@ def save_image(image: list[MatLike] | MatLike, name: str):
 
     if isinstance(image, list):
         for i, img in enumerate(image):
-            cv.imwrite(path.join(OUT_DIR, f"{name}_{i}.png"), img)
+            cv.imwrite(
+                path.join(OUT_DIR, f"{name}_{i}.png"), normalize_u8(img))
     else:
-        cv.imwrite(path.join(OUT_DIR, name), image)
+        cv.imwrite(path.join(OUT_DIR, name), normalize_u8(image))
 
 
 def load_image(name: str, test=False):
@@ -59,7 +64,7 @@ def load_image(name: str, test=False):
 
     assert path.exists(f) and path.isfile(f), f"File not found: {f}"
 
-    return cv.imread(f)
+    return cv.imread(f).astype(np.float64)
 
 
 def load_kernel(name: str):
