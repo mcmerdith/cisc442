@@ -19,7 +19,7 @@ def convolve(I: MatLike, H: MatLike, mode='reflect') -> MatLike:
         MatLike: The result of the convolution
     """
 
-    return cv.filter2D(I, -1, H, borderType=cv.BORDER_REFLECT)
+    return cv.filter2D(I, -1, H)
 
     # accomodate grayscale and color images
     is_color = I.ndim == 3

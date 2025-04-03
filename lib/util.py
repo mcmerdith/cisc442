@@ -64,7 +64,7 @@ def load_image(name: str, test=False):
 
     assert path.exists(f) and path.isfile(f), f"File not found: {f}"
 
-    return cv.imread(f).astype(np.float64)
+    return cv.imread(f).astype(np.float32)
 
 
 def load_kernel(name: str):

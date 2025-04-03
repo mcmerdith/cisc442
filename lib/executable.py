@@ -275,7 +275,9 @@ class Compare(Executable):
         if isinstance(self.reference, str):
             self.reference = load_image(self.reference, test=self.test)
 
-        self.info("Difference is", np.sum(np.abs(self.reference - self.data)))
+        diff = np.abs(self.reference - self.data)
+
+        self.info("Difference is", np.sum(diff))
 
         return np.allclose(self.reference, self.data)
 

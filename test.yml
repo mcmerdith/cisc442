@@ -11,16 +11,20 @@ execute:
       kernel: identity.txt
       source: lena.png
       test: lena.png
+      output: lena.png
     - operation: convolve
       kernel: sobel.txt
       source: lena.png
       test: sobel.png
+      output: sobel.png
     - operation: reduce
       source: lena.png
       test: reduced.png
+      output: reduced.png
     - operation: expand
       source: lena.png
       test: expanded.png
+      output: expanded.png
     - pipeline:
           - operation: reduce
           - operation: convolve
@@ -28,6 +32,7 @@ execute:
           - operation: expand
       source: lena.png
       test: reduced_convolved_expanded.png
+      output: reduced_convolved_expanded.png
     - pipeline:
           - operation: laplacian_pyramid
             levels: 5
@@ -35,3 +40,4 @@ execute:
             levels: 5
       source: lena.png
       test: lena.png
+      output: reconstructed.png
