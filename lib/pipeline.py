@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from time import time
 from lib.executable import Compare, Executable, LoadImage, SaveImage, build_operation
 
 
@@ -53,7 +54,9 @@ class Pipeline(Executable):
         # stitch operations together into a pipeline
         output = None
         for op in self.pipeline:
+            t = time()
             output = op.pipe_in(output).execute()
+            op.info(f"Completed in {time() - t} seconds")
         return output
 
 

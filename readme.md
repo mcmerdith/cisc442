@@ -25,6 +25,10 @@ pip install opencv-python pyyaml rich numpy
 
 ## Running
 
+VSCode run configurations are provided.
+
+It is also possible to run the program from the command line.
+
 ```
 python3 main.py
 
@@ -51,3 +55,13 @@ To run the semi-automated mosaicing, run `main.py --config interactive.yml`.
 Behold a masterpiece of scope creep. What could have been 7 functions in 2 files is now 7 modules.
 
 The actual code is in [lib/image.py](lib/image.py). Everything else is extra architecture.
+
+## A Note on Speed
+
+Of all the things I did, optimizing the convolution function was something I didn't do, so it's very slow.
+
+Fair warning, mosaicing takes a very long time.
+
+## Special Thanks
+
+A very special thank you to Tian for fixing my parameter ordering bug, and for reminding me that debuggers make everything easier.

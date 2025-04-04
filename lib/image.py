@@ -1,5 +1,6 @@
 import cv2 as cv
 import numpy as np
+from numpy.lib.stride_tricks import sliding_window_view
 from cv2.typing import MatLike
 
 from lib.util import gaussian_kernel_1d, normalize_u8, logger
@@ -50,18 +51,19 @@ def convolve(I: MatLike, H: MatLike, mode='reflect') -> MatLike:
         for x in range(img_w):
             if is_color:
                 # apply to all channels for RGB
-                for channel in range(I.shape[2]):
-                    output[y, x, channel] = np.sum(
-                        H * I_padded[y:y + kernel_h, x:x + kernel_w, channel]
-                    )
+                # for channel in range(I.shape[2]):
+                #     output[y, x, channel] = np.sum(
+                #         H * I_padded[y:y + kernel_h, x:x + kernel_w, channel]
+                #     )
+                output[y, x] = np.sum(
+                    H[:, :, None] * I_padded[y:y + kernel_h, x:x + kernel_w],
+                    axis=(0, 1)
+                )
             else:
                 # apply to grayscale
                 output[y, x] = np.sum(
                     H * I_padded[y:y + kernel_h, x:x + kernel_w]
                 )
-
-    # clip to valid range [0, 255] and cast to uint8
-    # output = np.clip(output, 0, 255).astype(np.uint8)
 
     return output
 

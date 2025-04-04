@@ -11,7 +11,7 @@ from lib.gui import PointMatcherGui, ShowImageGui
 from lib.image import (convolve, expand_image, gaussian_pyramid,
                        laplacian_pyramid, mosaic_images, reconstruct,
                        reduce_image)
-from lib.util import (is_type, load_image, load_kernel, logger, save_image,
+from lib.util import (is_type, load_image, load_kernel, logger, normalize_u8, save_image,
                       type_name, filter_keys)
 
 
@@ -265,11 +265,14 @@ class Compare(Executable):
         if isinstance(self.reference, str):
             self.reference = load_image(self.reference, test=self.test)
 
-        diff = np.abs(self.reference - self.data)
+        ref = normalize_u8(self.reference)
+        data = normalize_u8(self.data)
+
+        diff = np.abs(ref - data)
 
         self.info("Difference is", np.sum(diff))
 
-        return np.allclose(self.reference, self.data)
+        return np.allclose(ref, data)
 
 
 @dataclass(kw_only=True)

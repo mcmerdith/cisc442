@@ -34,4 +34,4 @@ execute:
           - operation: reconstruct
             levels: 5
       source: lena.png
-      test: lena.png
+      test: reconstructed.png

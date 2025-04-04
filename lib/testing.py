@@ -1,10 +1,10 @@
+from time import time
 import cv2 as cv
 import numpy as np
 from lib.config import Config
 from lib.pipeline import build_executor
 from lib.util import gaussian_kernel_1d, load_image, save_image, logger, console
 from lib.image import convolve, expand_image, reduce_image
-from rich.progress import track
 
 
 SAVE_IMAGES = False
@@ -18,7 +18,9 @@ def test(config: Config):
 
     with console.status("Executing") as status:
         for test in basic_tests:
+            t = time()
             test()
+            logger.info(f"{test.__name__} complete in {time() - t} seconds")
 
     test_pipeline(config)
 
