@@ -50,6 +50,8 @@ The mosaics for question 7 and extra credit are obtained by running `main.py --c
 
 To run the semi-automated mosaicing, run `main.py --config interactive.yml`.
 
+Precomputed deliverables are available in the [deliverables](deliverables) directory.
+
 ## Keybinds
 
 - `<Space>` Proceed
