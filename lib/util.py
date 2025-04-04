@@ -41,9 +41,10 @@ def save_image(image: list[MatLike] | MatLike, name: str):
     makedirs(OUT_DIR, exist_ok=True)
 
     if isinstance(image, list):
+        base, ext = path.splitext(name)
         for i, img in enumerate(image):
             cv.imwrite(
-                path.join(OUT_DIR, f"{name}_{i}.png"), normalize_u8(img))
+                path.join(OUT_DIR, f"{base}_{i}{ext}"), normalize_u8(img))
     else:
         cv.imwrite(path.join(OUT_DIR, name), normalize_u8(image))
 

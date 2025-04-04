@@ -50,6 +50,13 @@ The mosaics for question 7 and extra credit are obtained by running `main.py --c
 
 To run the semi-automated mosaicing, run `main.py --config interactive.yml`.
 
+## Keybinds
+
+- `<Space>` Proceed
+- `q` Quit
+- `h` Previous image (Preview only)
+- `l` Next image (Preview only)
+
 ## Why.
 
 Behold a masterpiece of scope creep. What could have been 7 functions in 2 files is now 7 modules.
