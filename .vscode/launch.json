@@ -5,15 +5,15 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug Config",
+            "name": "Main",
             "type": "debugpy",
             "request": "launch",
             "program": "main.py",
             "console": "integratedTerminal",
-            "args": "--config ${command:pickArgs}"
+            "args": ""
         },
         {
-            "name": "Test Debug",
+            "name": "Test",
             "type": "debugpy",
             "request": "launch",
             "program": "main.py",
@@ -21,12 +21,20 @@
             "args": "--test"
         },
         {
-            "name": "Main Debug",
+            "name": "Mosaic",
             "type": "debugpy",
             "request": "launch",
             "program": "main.py",
             "console": "integratedTerminal",
-            "args": "--config bazinga"
+            "args": "--test"
+        },
+        {
+            "name": "Specific Config",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "main.py",
+            "console": "integratedTerminal",
+            "args": "--config ${command:pickArgs}"
         }
     ]
 }
