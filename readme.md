@@ -73,4 +73,4 @@ Fair warning, mosaicing takes a very long time.
 
 ## Special Thanks
 
-A very special thank you to Tian for fixing my parameter ordering bug, and for reminding me that debuggers make everything easier.
+A very special thank you to Boyang Tian for fixing my parameter ordering bug, and for reminding me that debuggers make everything easier.
