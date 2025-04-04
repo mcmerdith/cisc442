@@ -26,7 +26,15 @@
             "request": "launch",
             "program": "main.py",
             "console": "integratedTerminal",
-            "args": "--test"
+            "args": "--config mosaic"
+        },
+        {
+            "name": "Interactive Mosaic",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "main.py",
+            "console": "integratedTerminal",
+            "args": "--config interactive"
         },
         {
             "name": "Specific Config",

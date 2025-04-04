@@ -1,11 +1,11 @@
 options:
     testing:
-        save_images: true
+        save_images: false
     image_dir: images
     kernel_dir: kernels
     test_dir: test_input
-    output_dir: test_output
-    log_level: INFO
+    output_dir: output
+    log_level: WARNING
 execute:
     - pipeline:
           - operation: mosaic

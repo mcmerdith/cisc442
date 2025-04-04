@@ -5,33 +5,30 @@ options:
     kernel_dir: kernels
     test_dir: test_input
     output_dir: output
-    log_level: WARN
+    log_level: WARNING
 execute:
-    - operation: convolve
-      kernel: identity.txt
-      source: lena.png
-      output: lena.png
     - operation: convolve
       kernel: sobel.txt
       source: lena.png
-      output: sobel.png
+      output: convolved.png
     - operation: reduce
       source: lena.png
       output: reduced.png
     - operation: expand
       source: lena.png
       output: expanded.png
-    - pipeline:
-          - operation: reduce
-          - operation: convolve
-            kernel: sobel.txt
-          - operation: expand
+    - operation: gaussian_pyramid
+      levels: 5
       source: lena.png
-      output: reduced_convolved_expanded.png
+      output: gaussian_pyramid.png
+    - operation: laplacian_pyramid
+      levels: 5
+      source: lena.png
+      output: laplacian_pyramid.png
     - pipeline:
           - operation: laplacian_pyramid
             levels: 5
           - operation: reconstruct
             levels: 5
       source: lena.png
-      output: lena.png
+      output: reconstructed.png
