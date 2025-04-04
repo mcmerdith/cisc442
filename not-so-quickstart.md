@@ -86,29 +86,50 @@ operation: reduce|expand
 # No additional parameters
 ```
 
-### Gaussian Pyramid
+### Gaussian Pyramid / Laplacian Pyramid / Reconstruct
 
 ```yaml
-operation: gaussian_pyramid
+operation: gaussian_pyramid|laplacian_pyramid|reconstruct
 # The number of levels
 levels: 5
 ```
 
-### Laplacian Pyramid
+### Mosaic
+
+The most complicated of them all.
 
 ```yaml
-operation: laplacian_pyramid
-# The number of levels
-levels: 5
+operation: mosaic
+# The left image
+source: LEFT.png
+# The right image
+source2: RIGHT.png
 ```
 
-### Reconstruct
+If providing points in the config file:
 
 ```yaml
-operation: reconstruct
-# The number of levels
-levels: 5
+points: [[x1, y1], [x2, y2], ...]
+points2: [[x1, y1], [x2, y2], ...]
 ```
+
+If providing points interactively:
+
+```yaml
+interactive: true
+```
+
+Providing neither will use automatic point matching with SIFT
+
+*A note on point matching*: Homography is delicate, so selecting good points is important.
+They should be of a wide variety and if possible be a convex shape
+in both images.
+
+**Bad points will cause a bad mosaic.**
+
+*As for the automatic point matching*: It's delicate. It can only really do panoramas that
+don't have too much perspective change. If the homography it finds doesn't make sense, the
+original left image will be returned and a warning will be logged.
 
 ## Pipelines
 

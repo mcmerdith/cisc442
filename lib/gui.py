@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import sys
 from time import time
 import cv2 as cv
 from cv2.typing import MatLike
@@ -57,7 +58,8 @@ class GuiWindow:
             self.destroy()
         elif key == QUIT:
             logger.info("User requested exit")
-            exit(0)
+            self.destroy()
+            sys.exit(0)
 
     def handle_click(self, event: int, x: int, y: int, flags: int, param, *, idx: int = None):
         pass
@@ -91,19 +93,9 @@ class PointMatcherGui(GuiWindow):
         self.windows = [self.name + " (left)", self.name + " (right)"]
         self.points = [[], []]
 
-    # def init(self):
-    #     self.defer = True
-    #     super().init()
-    #     cv.setMouseCallback(self.windows[0],
-    #                         lambda *args: self.handle_click(*args, idx=0))
-    #     cv.setMouseCallback(self.windows[1],
-    #                         lambda *args: self.handle_click(*args, idx=1))
-    #     self.run()
-    #     return self
-
     def show(self):
-        cv.imshow(self.windows[0], self.images[0])
-        cv.imshow(self.windows[1], self.images[1])
+        cv.imshow(self.windows[0], normalize_u8(self.images[0]))
+        cv.imshow(self.windows[1], normalize_u8(self.images[1]))
 
     def handle_key(self, key: str):
         # safeguard proceeding without the right number of points

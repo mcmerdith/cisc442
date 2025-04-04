@@ -1,0 +1,96 @@
+options:
+    testing:
+        save_images: true
+    image_dir: images
+    kernel_dir: kernels
+    test_dir: test_input
+    output_dir: test_output
+    log_level: INFO
+execute:
+    - operation: mosaic
+      source: Test_A1.png
+      source2: Test_A2.png
+      output: mosaic_A_automated.png
+    - operation: mosaic
+      source: Test_B1.png
+      source2: Test_B2.png
+      output: mosaic_B_automated.png
+    - operation: mosaic
+      source: Test_C1.png
+      source2: Test_C2.png
+      output: mosaic_C_automated.png
+    - operation: mosaic
+      source: Test_D1.png
+      source2: Test_D2.png
+      output: mosaic_D_automated.png
+    - operation: mosaic
+      source: Test_A1.png
+      source2: Test_A2.png
+      points:
+          [
+              [36, 168],
+              [98, 174],
+              [260, 91],
+              [383, 90],
+              [546, 169],
+              [606, 159],
+              [602, 237],
+              [233, 244],
+          ]
+      points2:
+          [
+              [62, 179],
+              [97, 183],
+              [209, 127],
+              [296, 124],
+              [406, 182],
+              [454, 174],
+              [352, 236],
+              [87, 230],
+          ]
+      output: mosaic_A.png
+    - operation: mosaic
+      source: Test_B1.png
+      source2: Test_B2.png
+      points: [[69, 383], [529, 315], [961, 316], [879, 444], [208, 423]]
+      points2: [[228, 339], [579, 304], [829, 369], [826, 479], [399, 423]]
+      output: mosaic_B.png
+    - operation: mosaic
+      source: Test_C1.png
+      source2: Test_C2.png
+      points:
+          [
+              [386, 230],
+              [453, 175],
+              [532, 210],
+              [605, 198],
+              [613, 336],
+              [474, 385],
+          ]
+      points2:
+          [[21, 192], [107, 144], [183, 197], [249, 200], [237, 326], [91, 367]]
+      output: mosaic_C.png
+    - operation: mosaic
+      source: Test_D1.png
+      source2: Test_D2.png
+      points:
+          [
+              [255, 58],
+              [282, 67],
+              [318, 57],
+              [343, 49],
+              [374, 87],
+              [340, 100],
+              [296, 107],
+          ]
+      points2:
+          [
+              [25, 55],
+              [52, 67],
+              [87, 62],
+              [111, 58],
+              [132, 95],
+              [105, 104],
+              [62, 107],
+          ]
+      output: mosaic_D.png

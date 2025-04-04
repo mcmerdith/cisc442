@@ -38,8 +38,16 @@ options:
   --config CONFIG  Load a config file
 ```
 
+## Solution
+
+The first 6 deliverables are obtained with by running `main.py` with no arguments. The default config file is `config.yml`.
+
+The mosaics for question 7 and extra credit are obtained by running `main.py --config mosaic.yml`.
+
+To run the semi-automated mosaicing, run `main.py --config interactive.yml`.
+
 ## Why.
 
-Behold a masterpiece of scope creep. What could have been 7 functions in 2 files is now 6 modules.
+Behold a masterpiece of scope creep. What could have been 7 functions in 2 files is now 7 modules.
 
 The actual code is in [lib/image.py](lib/image.py). Everything else is extra architecture.

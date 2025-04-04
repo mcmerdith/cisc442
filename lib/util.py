@@ -1,5 +1,6 @@
 import logging
 from os import makedirs, path
+from types import UnionType
 from typing import Any, Iterable, Literal, Union, get_args, get_origin
 
 import cv2 as cv
@@ -55,7 +56,7 @@ def load_image(name: str, test=False):
         name (str): The name of the image
 
     Returns:
-        MatLike: The loaded image
+        MatLike: The loaded image as float32 for computation
     """
     if test:
         f = path.join(TEST_DIR, name)
@@ -75,9 +76,9 @@ def load_kernel(name: str):
         name (str): The name of the kernel
 
     Returns:
-        MatLike: The loaded kernel
+        MatLike: The loaded kernel as float32 for computation
     """
-    return np.atleast_2d(np.loadtxt(path.join(KERNEL_DIR, name)))
+    return np.atleast_2d(np.loadtxt(path.join(KERNEL_DIR, name))).astype(np.float32)
 
 
 def gaussian_kernel_1d(size: int, sigma=1.0) -> MatLike:
@@ -89,15 +90,38 @@ def gaussian_kernel_1d(size: int, sigma=1.0) -> MatLike:
         sigma (float): The standard deviation of the kernel
 
     Returns:
-        MatLike: The kernel
+        MatLike: The kernel as float32 for computation
     """
     x = np.linspace(-(size // 2), (size // 2), size)
     gauss = 1/(np.sqrt(2*np.pi)*sigma) * np.exp(-1*(x)**2/(2*sigma**2))
 
-    return gauss
+    return gauss.astype(np.float32)
+
+
+def filter_keys(d: dict, keys: list[str], deny_list=False):
+    """
+    Filter a dict to include or exclude certain keys
+
+    Args:
+        d (dict): The dict to filter
+        keys (list[str]): The keys to include or exclude
+        deny_list (bool): If True, exclude the keys, otherwise include them
+
+    Returns:
+        dict: The filtered dict
+    """
+    if deny_list:
+        return {k: v for k, v in d.items() if k not in keys}
+    else:
+        return {k: v for k, v in d.items() if k in keys}
 
 
 MatLikeArgs = set(get_args(MatLike))
+
+########################################################
+#      THE WORLDS MOST ELITE RUNTIME TYPE CHECKER      #
+# Absolutely no reason for this to exist but it's cool #
+########################################################
 
 
 def type_name(dtype: type):
@@ -113,7 +137,7 @@ def type_name(dtype: type):
         str: The name of the type.
     """
     base_type = get_origin(dtype)
-    if base_type is Union:
+    if base_type is Union or base_type is UnionType:
         args = get_args(dtype)
         argset = set(args)
 
@@ -140,7 +164,9 @@ def is_type(value: Any, dtype: type):
     """
     The worlds best sketchy runtime type checker.
 
-    Probably catchs 99% of cases
+    Can find 99% of common types (probably)
+
+    Recursively evaluates types and their type arguments.
 
     Args:
         value (Any): The value to check
@@ -161,7 +187,7 @@ def is_type(value: Any, dtype: type):
         logger.debug(f"  Should be a literal of {args}")
         # literal type comparison
         return value in dtype.__args__
-    elif base_type is Union:
+    elif base_type is Union or base_type is UnionType:
         logger.debug(f"  Should be one of {args}")
         # recursively check all union types for the forsaken nested union
         return any([is_type(value, arg) for arg in args])

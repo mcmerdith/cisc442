@@ -8,10 +8,11 @@ from cv2.typing import MatLike
 
 from lib.config import LogLevel
 from lib.gui import PointMatcherGui, ShowImageGui
-from lib.image import (convolve, expand_image, gaussian_pyramid, laplacian_pyramid, mosaic_images,
-                       reconstruct, reduce_image)
+from lib.image import (convolve, expand_image, gaussian_pyramid,
+                       laplacian_pyramid, mosaic_images, reconstruct,
+                       reduce_image)
 from lib.util import (is_type, load_image, load_kernel, logger, save_image,
-                      type_name)
+                      type_name, filter_keys)
 
 
 @dataclass(kw_only=True)
@@ -102,24 +103,6 @@ class Executable:
         self.info(*args, level=LogLevel.DEBUG, **kwargs)
 
 
-def filter_keys(d: dict, keys: list[str], deny_list=False):
-    """
-    Filter a dict to include or exclude certain keys
-
-    Args:
-        d (dict): The dict to filter
-        keys (list[str]): The keys to include or exclude
-        deny_list (bool): If True, exclude the keys, otherwise include them
-
-    Returns:
-        dict: The filtered dict
-    """
-    if deny_list:
-        return {k: v for k, v in d.items() if k not in keys}
-    else:
-        return {k: v for k, v in d.items() if k in keys}
-
-
 ArgType = TypeVar("ArgType")
 
 
@@ -142,8 +125,8 @@ def build_operation(op: dict, id: str):
             return LoadImage(**filter_keys(op, ["name"]), _id=id)
         case "save_image":
             return SaveImage(**filter_keys(op, ["name"]), _id=id)
-        case "show_mage":
-            return ShowImage(**filter_keys(op, []), _id=id)
+        case "show_image":
+            return ShowImage(**filter_keys(op, ["timeout"]), _id=id)
         case "convolve":
             return Convolve(**filter_keys(op, ["kernel", "mode"]), _id=id)
         case "reduce":
@@ -159,9 +142,15 @@ def build_operation(op: dict, id: str):
         case "compare":
             return Compare(**filter_keys(op, ["reference", "test"]), _id=id)
         case "mosaic":
-            return Mosaic(**filter_keys(op, ["source2", "points", "points2"]), _id=id)
+            return Mosaic(**filter_keys(op, ["source2", "points", "points2", "interactive"]), _id=id)
         case _:
             raise ValueError(f"Unknown operation: {op['operation']}")
+
+
+#################################################
+#             Executable Operations             #
+# Mostly just wrappers around the image library #
+#################################################
 
 
 @dataclass(kw_only=True)
@@ -189,11 +178,12 @@ class SaveImage(Executable):
 @dataclass(kw_only=True)
 class ShowImage(Executable):
     data: MatLike = None
+    timeout: int | None = None
 
     def execute(self):
         super().execute()
         self.info(f"Showing image")
-        ShowImageGui(image=self.data).init()
+        ShowImageGui(image=self.data, timeout=self.timeout).init()
         return self.data
 
 
@@ -285,9 +275,9 @@ class Compare(Executable):
 @dataclass(kw_only=True)
 class Mosaic(Executable):
     data: MatLike = None
-    points: list[list[int]] = None
     source2: MatLike | str = None
-    points2: list[list[int]] = None
+    points: list[list[int]] | None = None
+    points2: list[list[int]] | None = None
     interactive: bool = False
 
     def execute(self):
@@ -298,11 +288,12 @@ class Mosaic(Executable):
 
         if self.points and self.points2:
             p1, p2 = np.array(self.points), np.array(self.points2)
-        else:
+        elif self.interactive:
             matcher = PointMatcherGui(images=[self.data, self.source2]).init()
             p1, p2 = np.array(matcher.points[0]), np.array(matcher.points[1])
+        else:
+            p1, p2 = None, None
 
-        assert p1.shape == p2.shape and p1.shape[1] == 2, "Points must be the same length"
         mosaic = mosaic_images(self.data, self.source2, p1, p2)
 
         return mosaic

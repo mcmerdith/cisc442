@@ -5,6 +5,14 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Debug Config",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "main.py",
+            "console": "integratedTerminal",
+            "args": "--config ${command:pickArgs}"
+        },
+        {
             "name": "Test Debug",
             "type": "debugpy",
             "request": "launch",

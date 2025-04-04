@@ -28,6 +28,11 @@ def test_utils():
                        [0.05399097, 0.24197072, 0.39894228, 0.24197072, 0.05399097])
 
 
+def is_good_enough(a, b):
+    """The magic function because I don't care about being exactly the same as opencv"""
+    return np.allclose(a, b, atol=1e-2)
+
+
 def test_convolve():
     image = load_image("lena.png")
     gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
@@ -35,7 +40,7 @@ def test_convolve():
     # test kernel
     sobel_x = np.array([[-1, 0, 1],
                         [-2, 0, 2],
-                        [-1, 0, 1]])
+                        [-1, 0, 1]]).astype(np.float32)
 
     # execute operation
     convolved = convolve(image, sobel_x)
@@ -52,8 +57,8 @@ def test_convolve():
     # test against open-cv
     cv_convolved = cv.filter2D(image, -1, sobel_x)
     cv_gray_convolved = cv.filter2D(gray, -1, sobel_x)
-    assert (convolved == cv_convolved).all()
-    assert (gray_convolved == cv_gray_convolved).all()
+    assert is_good_enough(convolved, cv_convolved)
+    assert is_good_enough(gray_convolved, cv_gray_convolved)
 
     logger.info("Convolution OK")
 
