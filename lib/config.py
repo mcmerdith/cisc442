@@ -14,6 +14,7 @@ class LogLevel(Enum):
     INFO = logging.INFO
     WARNING = logging.WARNING
     ERROR = logging.ERROR
+    CRITICAL = logging.CRITICAL
 
 
 @dataclass

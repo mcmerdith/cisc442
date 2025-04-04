@@ -4,7 +4,7 @@ import numpy as np
 from lib.config import Config
 from lib.pipeline import build_executor
 from lib.util import gaussian_kernel_1d, load_image, save_image, logger, console
-from lib.image import convolve, expand_image, reduce_image
+from lib.image import convolve, expand_image, laplacian_pyramid, reconstruct, reduce_image
 
 
 SAVE_IMAGES = False
@@ -14,7 +14,8 @@ def test(config: Config):
     global SAVE_IMAGES
     SAVE_IMAGES = config.options.testing.save_images
 
-    basic_tests = [test_utils, test_convolve, test_reduce, test_expand]
+    basic_tests = [test_utils, test_convolve,
+                   test_reduce, test_expand, test_reconstruction]
 
     with console.status("Executing") as status:
         for test in basic_tests:
@@ -62,7 +63,7 @@ def test_convolve():
     assert is_good_enough(convolved, cv_convolved)
     assert is_good_enough(gray_convolved, cv_gray_convolved)
 
-    logger.info("Convolution OK")
+    logger.critical("Convolution OK")
 
 
 def test_reduce():
@@ -75,7 +76,7 @@ def test_reduce():
     # image should be half the size
     assert reduced.shape[:2] == (image.shape[0] // 2, image.shape[1] // 2)
 
-    logger.info("Reduce OK")
+    logger.critical("Reduce OK")
 
 
 def test_expand():
@@ -88,15 +89,24 @@ def test_expand():
     # image should be double the size
     assert expanded.shape[:2] == (image.shape[0] * 2, image.shape[1] * 2)
 
-    logger.info("Expand OK")
+    logger.critical("Expand OK")
+
+
+def test_reconstruction():
+    image = load_image("lena.png")
+    pyramid = laplacian_pyramid(image, 5)
+    reconstructed = reconstruct(pyramid, 5)
+
+    logger.critical(
+        f"Reconstruction difference: {np.sum(image - reconstructed)}")
 
 
 def test_pipeline(config: Config):
-    logger.info("Beginning pipeline test")
+    logger.critical("Beginning pipeline test")
 
     executor = build_executor(config.execute)
 
     with console.status("Testing Pipeline") as status:
         assert all([step.execute() for step in executor]), "Pipeline Failure"
 
-    logger.info("Pipeline OK")
+    logger.critical("Pipeline OK")

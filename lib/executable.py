@@ -94,13 +94,13 @@ class Executable:
         """
         return self._id + "-" + type(self).__name__
 
-    def info(self, *args, level=LogLevel.INFO, **kwargs):
+    def log(self, *args, level=LogLevel.INFO, **kwargs):
         logger.log(
             level.value, f"[{self.get_name()}] {' '.join([str(arg) for arg in args])}", **kwargs
         )
 
     def debug(self, *args, **kwargs):
-        self.info(*args, level=LogLevel.DEBUG, **kwargs)
+        self.log(*args, level=LogLevel.DEBUG, **kwargs)
 
 
 ArgType = TypeVar("ArgType")
@@ -159,7 +159,7 @@ class LoadImage(Executable):
 
     def execute(self):
         super().execute()
-        self.info(f"Loading image: {self.name}")
+        self.log(f"Loading image: {self.name}")
         return load_image(self.name)
 
 
@@ -170,7 +170,7 @@ class SaveImage(Executable):
 
     def execute(self):
         super().execute()
-        self.info(f"Saving image: {self.name}")
+        self.log(f"Saving image: {self.name}")
         save_image(self.data, self.name)
         return self.data
 
@@ -182,7 +182,7 @@ class ShowImage(Executable):
 
     def execute(self):
         super().execute()
-        self.info(f"Showing image")
+        self.log(f"Showing image")
         ShowImageGui(image=self.data, timeout=self.timeout).init()
         return self.data
 
@@ -195,7 +195,7 @@ class Convolve(Executable):
 
     def execute(self):
         super().execute()
-        self.info(f"Convolving with kernel: {self.kernel}")
+        self.log(f"Convolving with kernel: {self.kernel}")
         if isinstance(self.kernel, str):
             self.kernel = load_kernel(self.kernel)
         return convolve(self.data, self.kernel, self.mode)
@@ -207,7 +207,7 @@ class Reduce(Executable):
 
     def execute(self):
         super().execute()
-        self.info(f"Reducing image")
+        self.log(f"Reducing image")
         return reduce_image(self.data)
 
 
@@ -217,7 +217,7 @@ class Expand(Executable):
 
     def execute(self):
         super().execute()
-        self.info(f"Expanding image")
+        self.log(f"Expanding image")
         return expand_image(self.data)
 
 
@@ -228,7 +228,7 @@ class LaplacianPyramid(Executable):
 
     def execute(self):
         super().execute()
-        self.info(f"Computing Laplacian Pyramid with {self.levels} levels")
+        self.log(f"Computing Laplacian Pyramid with {self.levels} levels")
         return laplacian_pyramid(self.data, self.levels)
 
 
@@ -239,7 +239,7 @@ class GaussianPyramid(Executable):
 
     def execute(self):
         super().execute()
-        self.info(f"Computing Gaussian Pyramid with {self.levels} levels")
+        self.log(f"Computing Gaussian Pyramid with {self.levels} levels")
         return gaussian_pyramid(self.data, self.levels)
 
 
@@ -250,7 +250,7 @@ class Reconstruct(Executable):
 
     def execute(self):
         super().execute()
-        self.info(f"Reconstructing image with {self.levels} levels")
+        self.log(f"Reconstructing image with {self.levels} levels")
         return reconstruct(self.data, self.levels)
 
 
@@ -270,7 +270,7 @@ class Compare(Executable):
 
         diff = np.abs(ref - data)
 
-        self.info("Difference is", np.sum(diff))
+        self.log("Difference is", np.sum(diff), level=LogLevel.CRITICAL)
 
         return np.allclose(ref, data)
 
@@ -285,7 +285,7 @@ class Mosaic(Executable):
 
     def execute(self):
         super().execute()
-        self.info(f"Mosaicing images")
+        self.log(f"Mosaicing images")
         if isinstance(self.source2, str):
             self.source2 = load_image(self.source2)
 

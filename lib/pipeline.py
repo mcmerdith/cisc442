@@ -56,7 +56,7 @@ class Pipeline(Executable):
         for op in self.pipeline:
             t = time()
             output = op.pipe_in(output).execute()
-            op.info(f"Completed in {time() - t} seconds")
+            op.log(f"Completed in {time() - t} seconds")
         return output
 
 
