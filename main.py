@@ -28,11 +28,11 @@ def laplacian(images: list[MatLike]):
     for i in range(n-1):
         h, w = images[i].shape[:2]
         levels.append(
-            images[i].astype(np.float64) - cv.resize(images[i+1], (w, h))
+            images[i] - cv.resize(images[i+1], (w, h))
         )
     levels.append(images[-1])
 
-    return [level.clip(0, 255).astype(np.uint8) for level in levels]
+    return levels
 
 
 def save_image(image: MatLike | list[MatLike], name: str):
@@ -44,21 +44,27 @@ def save_image(image: MatLike | list[MatLike], name: str):
         cv.imwrite(f"output/{name}.png", image)
 
 
+def normalize(image: MatLike | list[MatLike]):
+    if isinstance(image, list):
+        return [i.clip(0, 255).astype(np.uint8) for i in image]
+    else:
+        return image.clip(0, 255).astype(np.uint8)
+
+
 def main():
-    image = cv.imread("Einstein.jpg")
+    image = cv.imread("Einstein.jpg").astype(np.float64)
 
-    mr = multi_resolution(image.copy(), 3)
-    ms = multi_scale(image.copy(), 3)
-    lp = cv.Laplacian(image, cv.CV_64F).clip(0, 255).astype(np.uint8)
-    ms_lp = laplacian(mr)
-    mr_lp = laplacian(ms)
+    mr = (multi_resolution(image.copy(), 3))
+    ms = (multi_scale(image.copy(), 3))
+    lp = (cv.Laplacian(image, cv.CV_64F))
+    ms_lp = (laplacian(mr))
+    mr_lp = (laplacian(ms))
 
-    save_image(image, "original")
-    save_image(mr, "multi_resolution")
-    save_image(ms, "multi_scale")
-    save_image(lp, "laplacian")
-    save_image(ms_lp, "multi_resolution_laplacian")
-    save_image(mr_lp, "multi_scale_laplacian")
+    save_image(normalize(mr), "multi_resolution")
+    save_image(normalize(ms), "multi_scale")
+    save_image(normalize(lp), "laplacian")
+    save_image(normalize(ms_lp), "multi_resolution_laplacian")
+    save_image(normalize(mr_lp), "multi_scale_laplacian")
 
 
 if __name__ == "__main__":
