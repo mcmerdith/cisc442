@@ -16,8 +16,9 @@ def multi_resolution(image: MatLike, levels: int):
 
 def multi_scale(image: MatLike, levels: int):
     pyr = [image]
-    for _ in range(levels):
-        pyr.append(cv.GaussianBlur(pyr[-1], (5, 5), 0))
+    for i in range(levels):
+        pyr.append(cv.GaussianBlur(image, (5, 5), 2 ^ i))
+        # pyr.append(cv.GaussianBlur(pyr[-1]), (5, 5), 0))
 
     return pyr
 
@@ -54,11 +55,11 @@ def normalize(image: MatLike | list[MatLike]):
 def main():
     image = cv.imread("Einstein.jpg").astype(np.float64)
 
-    mr = (multi_resolution(image.copy(), 3))
-    ms = (multi_scale(image.copy(), 3))
-    lp = (cv.Laplacian(image, cv.CV_64F))
-    ms_lp = (laplacian(mr))
-    mr_lp = (laplacian(ms))
+    mr = multi_resolution(image.copy(), 3)
+    ms = multi_scale(image.copy(), 3)
+    lp = cv.Laplacian(image, cv.CV_64F)
+    ms_lp = laplacian(mr)
+    mr_lp = laplacian(ms)
 
     save_image(normalize(mr), "multi_resolution")
     save_image(normalize(ms), "multi_scale")
