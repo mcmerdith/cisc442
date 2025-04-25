@@ -19,6 +19,9 @@ def show_image(image: MatLike):
 
 
 def load_image(filename: str):
+    """
+    Load an image as CV_U8
+    """
     return cv.imread(path.join("input", filename))
 
 
@@ -101,7 +104,8 @@ def main():
     for filename, image in images:
         for detector in detectors:
             overlayed, *_ = detector(image)
-            save_image(f"{filename}_{detector.__name__}.png", overlayed)
+            basename, ext = path.splitext(filename)
+            save_image(f"{basename}_{detector.__name__}{ext}", overlayed)
 
     pass
 
