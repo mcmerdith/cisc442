@@ -1,19 +1,18 @@
 import cv2 as cv
 import numpy as np
-
 from cv2.typing import MatLike
 
-from lib.common import ScoreFunction, score_NCC, score_SAD, score_SSD
+from lib.image import ScoreFunction
 
 
-def region_based(left_image: MatLike, right_image: MatLike, window_size: tuple[int, int], search_area: int = 16, score_fn: ScoreFunction = score_SSD):
+def region_based(left_image: MatLike, right_image: MatLike, window_size: tuple[int, int], search_area: int, score_fn: ScoreFunction):
     gray_left = cv.cvtColor(left_image, cv.COLOR_BGR2GRAY)
     gray_right = cv.cvtColor(right_image, cv.COLOR_BGR2GRAY)
     h, w = left_image.shape[:2]
     half_h, half_w = window_size[0] // 2, window_size[1] // 2
 
-    disparity_ltr = np.zeros((h, w), dtype=np.uint8)
-    disparity_rtl = np.zeros((h, w), dtype=np.uint8)
+    disparity_ltr = np.zeros((h, w), dtype=np.int32)
+    disparity_rtl = np.zeros((h, w), dtype=np.int32)
 
     for y in range(half_h, h - half_h):
         for x in range(half_w, w - half_w):
