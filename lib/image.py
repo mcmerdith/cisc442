@@ -42,6 +42,7 @@ def average_neighborhood(disparity: MatLike, max_size: int = 19):
                 size += 2
             elif non_zero.size > 0:
                 value = np.mean(non_zero).round().astype(averaged.dtype)
+                # value = np.mean(neighborhood).round().astype(averaged.dtype)
             else:
                 break
         if value is not None:
@@ -127,15 +128,20 @@ ScoreFunction = Callable[[MatLike, MatLike], float]
 
 
 def score_SAD(first: MatLike, second: MatLike):
-    # this doesnt work for some reason
+    first = first.astype(np.int32)
+    second = second.astype(np.int32)
     return np.sum(np.abs(first - second))
 
 
 def score_SSD(first: MatLike, second: MatLike):
+    first = first.astype(np.int32)
+    second = second.astype(np.int32)
     return np.sum(np.square(first - second))
 
 
 def score_NCC(first: MatLike, second: MatLike):
+    first = first.astype(np.int32)
+    second = second.astype(np.int32)
     # questionable...
     m1 = np.mean(first)
     m2 = np.mean(second)

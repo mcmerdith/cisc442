@@ -67,8 +67,8 @@ def run(method: str, left_image: MatLike, right_image: MatLike, template_x_size:
 
         validated = disparity.copy()
 
-        for _ in range(2):
-            disparity = average_neighborhood(disparity)
+        # for _ in range(2):
+        #     disparity = average_neighborhood(disparity, max_size=99)
 
         averaged = disparity.copy()
 
@@ -94,4 +94,4 @@ right_image_path = "barn1/im1.ppm"
 left_image = load_image(left_image_path)
 right_image = load_image(right_image_path)
 
-run("region", left_image, right_image, 7, 7, 10, score_NCC)
+run("feature", left_image, right_image, 7, 7, 10, score_NCC)
