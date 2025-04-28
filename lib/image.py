@@ -71,7 +71,7 @@ def validate(disp_left: MatLike, disp_right: MatLike, threshold: int = 0):
             if d == 0:
                 continue  # Already a gap
 
-            x_r = x - d
+            x_r = x - int(d)
             if x_r >= 0 and x_r < width:
                 d_prime = disp_right[y, x_r]
                 if np.abs(int(d) - int(d_prime)) > threshold:

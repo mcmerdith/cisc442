@@ -26,6 +26,8 @@ def feature_based(left_image: MatLike, right_image: MatLike, window_size: tuple[
 
     harris_left[harris_left < 0.005*harris_left.max()] = 0
     harris_right[harris_right < 0.005*harris_right.max()] = 0
+    harris_left[harris_left > 0] = 1
+    harris_right[harris_right > 0] = 1
 
     show_image(np.hstack([normalize(i)
                for i in (harris_left, harris_right)]), name="harris")
@@ -106,7 +108,13 @@ def feature_based(left_image: MatLike, right_image: MatLike, window_size: tuple[
             disparity = np.abs(x_l - x_r)
             disp_right[y_l, x_l] = disparity
 
-    return cv.dilate(disp_left, None, iterations=1), cv.dilate(disp_right, None, iterations=1)
+    disp_left = cv.dilate(normalize(disp_left), None)
+    disp_right = cv.dilate(normalize(disp_right), None)
+
+    disp_left = cv.GaussianBlur(disp_left, window_size, window_size[0]-1/6.0)
+    disp_right = cv.GaussianBlur(disp_right, window_size, window_size[0]-1/6.0)
+
+    return disp_left, disp_right
 
 
 # def interpolate(sparse: MatLike):

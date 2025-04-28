@@ -61,13 +61,18 @@ def run(method: str, left_image: MatLike, right_image: MatLike, template_x_size:
         show_image(np.hstack([normalize(d)
                    for d in (disparity_ltr, disparity, disparity_rtl)]), name="disparity raw")
 
-        # disparity = cv.inpaint(
-        #     normalize(disparity), (disparity == 0).astype(np.uint8), 3, cv.INPAINT_TELEA)
+        validated = disparity.copy()
 
         for _ in range(2):
             disparity = average_neighborhood(disparity)
 
-        show_image(normalize(disparity), name="disparity")
+        averaged = disparity.copy()
+
+        disparity = cv.inpaint(
+            averaged, (averaged == 0).astype(np.uint8), 3, cv.INPAINT_TELEA)
+
+        show_image(np.hstack([normalize(i)
+                   for i in (validated, averaged, disparity)]), name="disparity")
 
         disparity = cv.resize(
             cv.pyrUp(disparity), (w*2, h*2), interpolation=cv.INTER_NEAREST)
