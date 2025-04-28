@@ -11,38 +11,41 @@ def normalize(image: MatLike):
                         beta=255, norm_type=cv.NORM_MINMAX, dtype=cv.CV_8U)
 
 
-def average_neighborhood(disparity: MatLike):
+def average_neighborhood(disparity: MatLike, max_size: int = 19):
     h, w = disparity.shape[:2]
 
     averaged = disparity.copy()
 
     base_size = 3
-    half_base_size = base_size // 2
-    for y in range(half_base_size, h - half_base_size):
-        for x in range(half_base_size, w - half_base_size):
-            if np.abs(disparity[y, x]) > 0:
-                continue
-            # reset size
-            size = base_size
-            while True:
-                assert size < h and size < w, "too few neighbors"
-                half_size = size // 2
+    # for y in range(half_base_size, h - half_base_size):
+    #     for x in range(half_base_size, w - half_base_size):
+    for y, x in np.argwhere(disparity == 0):
+        # if np.abs(disparity[y, x]) > 0:
+        #     continue
+        # reset size
+        size = base_size
+        value = None
+        while value is None:
+            half_size = size // 2
 
-                # get neighborhood (clamped to edges)
-                start_y = max(y - half_size, 0)
-                end_y = min(y + half_size + 1, h)
-                start_x = max(x - half_size, 0)
-                end_x = min(x + half_size + 1, w)
-                neighborhood = disparity[start_y:end_y,
-                                         start_x:end_x]
+            # get neighborhood (clamped to edges)
+            start_y = max(y - half_size, 0)
+            end_y = min(y + half_size + 1, h)
+            start_x = max(x - half_size, 0)
+            end_x = min(x + half_size + 1, w)
+            neighborhood = disparity[start_y:end_y,
+                                     start_x:end_x]
 
-                assert (neighborhood >= 0).all()
-                non_zero = neighborhood[np.nonzero(neighborhood)]
-                if non_zero.size < 5:
-                    size += 2
-                else:
-                    break
-            averaged[y, x] = np.mean(non_zero)
+            assert (neighborhood >= 0).all()
+            non_zero = neighborhood[np.nonzero(neighborhood)]
+            if non_zero.size < 5 and size + 2 < max_size:
+                size += 2
+            elif non_zero.size > 0:
+                value = np.mean(non_zero).round().astype(averaged.dtype)
+            else:
+                break
+        if value is not None:
+            averaged[y, x] = value
 
     return averaged
 
@@ -71,7 +74,7 @@ def validate(disp_left: MatLike, disp_right: MatLike, threshold: int = 0):
             x_r = x - d
             if x_r >= 0 and x_r < width:
                 d_prime = disp_right[y, x_r]
-                if np.abs(d - d_prime) > threshold:
+                if np.abs(int(d) - int(d_prime)) > threshold:
                     valid_disp[y, x] = 0  # Invalidate
             else:
                 valid_disp[y, x] = 0  # Out of bounds → invalidate
@@ -142,6 +145,6 @@ def score_NCC(first: MatLike, second: MatLike):
                           np.sum(np.square(second - m2)))
 
     if denominator == 0:
-        return -1
+        return 1
 
     return -(numerator / denominator)

@@ -9,11 +9,29 @@ from lib.image import ScoreFunction, harris, normalize, overlay
 
 def feature_based(left_image: MatLike, right_image: MatLike, window_size: tuple[int, int], search_area: int, score_fn: ScoreFunction):
     h, w = left_image.shape[:2]
-    disparity_map = np.zeros((h, w), dtype=np.int32)
+    disp_left = np.zeros((h, w), dtype=left_image.dtype)
+    disp_right = np.zeros((h, w), dtype=right_image.dtype)
 
     half_h, half_w = window_size[0] // 2, window_size[1] // 2
-    harris_left = harris(left_image)
-    harris_right = harris(right_image)
+    # harris_left = harris(left_image)
+    # harris_right = harris(right_image)
+    gray_left = cv.cvtColor(left_image, cv.COLOR_BGR2GRAY)
+    gray_right = cv.cvtColor(right_image, cv.COLOR_BGR2GRAY)
+
+    harris_left = cv.cornerHarris(gray_left, 2, 3, 0.04)
+    harris_right = cv.cornerHarris(gray_right, 2, 3, 0.04)
+
+    # harris_left = cv.dilate(harris_left, None, iterations=1)
+    # harris_right = cv.dilate(harris_right, None, iterations=1)
+
+    harris_left[harris_left < 0.005*harris_left.max()] = 0
+    harris_right[harris_right < 0.005*harris_right.max()] = 0
+
+    show_image(np.hstack([normalize(i)
+               for i in (harris_left, harris_right)]), name="harris")
+
+    left_kp = np.argwhere(harris_left)
+    right_kp = np.argwhere(harris_right)
 
     def get_patch(img, x, y):
         start_y = y - half_h
@@ -29,44 +47,66 @@ def feature_based(left_image: MatLike, right_image: MatLike, window_size: tuple[
         end_x = x + half_w + 1
         return start_y >= 0 and end_y < h and start_x >= 0 and end_x < w
 
-    right_kp_dict = {(x, y): get_patch(right_image, x, y)
-                     for x, y in harris_right
+    left_kp_dict = {(x, y): get_patch(gray_left, x, y)
+                    for y, x in left_kp
+                    if in_bounds(x, y)}
+    right_kp_dict = {(x, y): get_patch(gray_right, x, y)
+                     for y, x in right_kp
                      if in_bounds(x, y)}
-    matched_image = np.hstack([img.copy()
-                              for img in (overlay(left_image, harris_left), overlay(right_image, harris_right))])
-    for (x_l, y_l) in harris_left:
-        if not in_bounds(x_l, y_l):
-            continue
+    for (x_l, y_l), patch_left in left_kp_dict.items():
+        # for (y_l, x_l) in left_kp:
+        # y_l_start = y_l - half_h
+        # y_l_end = y_l + half_h + 1
+        # x_l_start = x_l - half_w
+        # x_l_end = x_l + half_w + 1
 
-        patch = get_patch(left_image, x_l, y_l)
+        # if y_l_start < 0 or y_l_end > h or x_l_start < 0 or x_l_end > w:
+        #     continue
 
-        best_score = None
-        best_match = None
+        # patch_left = gray_left[y_l_start:y_l_end, x_l_start:x_l_end]
+
+        best_score_left = None
+        best_match_left = None
+        best_score_right = None
+        best_match_right = None
 
         for (x_r, y_r), patch_right in right_kp_dict.items():
+            # for (y_r, x_r) in right_kp:
+            # y_r_start = y_r - half_h
+            # y_r_end = y_r + half_h + 1
+            # x_r_start = x_r - half_w
+            # x_r_end = x_r + half_w + 1
+
+            # if y_r_start < 0 or y_r_end > h or x_r_start < 0 or x_r_end > w:
+            #     continue
             if np.abs(x_l - x_r) > search_area or np.abs(y_l - y_r) > search_area:
                 continue  # only match along same row
 
-            assert patch_right.shape == patch.shape
+            # patch_right = gray_right[y_r_start:y_r_end, x_r_start:x_r_end]
 
-            score = score_fn(patch_right, patch)
-            if best_score is None or score > best_score:
-                best_score = score
-                best_match = (x_r, y_r)
+            assert patch_right.shape == patch_left.shape
 
-        if best_match is not None:
-            x_r, y_r = best_match
+            score_left = score_fn(patch_left, patch_right)
+            if best_score_left is None or score_left < best_score_left:
+                best_score_left = score_left
+                best_match_left = (x_r, y_r)
+
+            score_right = score_fn(patch_right, patch_left)
+            if best_score_right is None or score_right < best_score_right:
+                best_score_right = score_right
+                best_match_right = (x_r, y_r)
+
+        if best_match_left is not None:
+            x_r, y_r = best_match_left
             disparity = np.abs(x_l - x_r)
-            disparity_map[y_l, x_l] = disparity
-            cv.line(matched_image, (x_l, y_l),
-                    (x_r + w, y_r), (0, 255, 0), 1)
+            disp_left[y_l, x_l] = disparity
 
-    show_image(matched_image)
+        if best_match_right is not None:
+            x_r, y_r = best_match_right
+            disparity = np.abs(x_l - x_r)
+            disp_right[y_l, x_l] = disparity
 
-    disparity_map = cv.inpaint(
-        normalize(disparity_map), (disparity_map == 0).astype(np.uint8), 3, cv.INPAINT_TELEA)
-
-    return disparity_map
+    return cv.dilate(disp_left, None, iterations=1), cv.dilate(disp_right, None, iterations=1)
 
 
 # def interpolate(sparse: MatLike):

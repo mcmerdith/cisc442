@@ -34,9 +34,18 @@ def automatic():
 
 
 def run(method: str, left_image: MatLike, right_image: MatLike, template_x_size: int, template_y_size: int, search_range: int, score_fn: ScoreFunction):
+    h, w = left_image.shape[:2]
+    left_image = cv.pyrDown(left_image)
+    right_image = cv.pyrDown(right_image)
+
     if method == 'region':
         disparity_ltr, disparity_rtl = region_based(
             left_image, right_image, (template_y_size, template_x_size), search_range, score_fn)
+
+        disparity_ltr = cv.resize(
+            disparity_ltr, (w, h), interpolation=cv.INTER_NEAREST)
+        disparity_rtl = cv.resize(
+            disparity_rtl, (w, h), interpolation=cv.INTER_NEAREST)
 
         # validation
         disparity = validate(disparity_ltr, disparity_rtl)
@@ -45,19 +54,45 @@ def run(method: str, left_image: MatLike, right_image: MatLike, template_x_size:
         for _ in range(2):
             disparity = average_neighborhood(disparity)
     elif method == 'feature':
-        disparity = feature_based(
+        disparity_ltr, disparity_rtl = feature_based(
             left_image, right_image, (template_x_size, template_y_size), search_range, score_fn)
+
+        disparity = validate(disparity_ltr, disparity_rtl, threshold=1)
+        show_image(np.hstack([normalize(d)
+                   for d in (disparity_ltr, disparity, disparity_rtl)]), name="disparity raw")
+
+        # disparity = cv.inpaint(
+        #     normalize(disparity), (disparity == 0).astype(np.uint8), 3, cv.INPAINT_TELEA)
+
+        for _ in range(2):
+            disparity = average_neighborhood(disparity)
 
         show_image(normalize(disparity), name="disparity")
 
+        disparity = cv.resize(
+            cv.pyrUp(disparity), (w*2, h*2), interpolation=cv.INTER_NEAREST)
+        # disparity_ltr = cv.resize(
+        #     disparity_ltr, (w, h), interpolation=cv.INTER_NEAREST)
+        # disparity_rtl = cv.resize(
+        #     disparity_rtl, (w, h), interpolation=cv.INTER_NEAREST)
+
+        # show = np.hstack([normalize(d)
+        #                  for d in (disparity_ltr, disparity, disparity_rtl)])
+
+        # show_image(show, name="disparity raw")
+
+        # show_image(np.hstack((normalize(disparity), show)), name="disparity")
+
     disparity = normalize(disparity)
 
-    # show_image(disparity)
+    show_image(disparity)
     save_image('disparity.png', disparity)
 
 
-left_image_path = "tsukuba/scene1.row3.col1.ppm"
-right_image_path = "tsukuba/scene1.row3.col2.ppm"
+# left_image_path = "tsukuba/scene1.row3.col1.ppm"
+# right_image_path = "tsukuba/scene1.row3.col2.ppm"
+left_image_path = "barn1/im0.ppm"
+right_image_path = "barn1/im1.ppm"
 left_image = load_image(left_image_path)
 right_image = load_image(right_image_path)
 
