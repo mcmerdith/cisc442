@@ -35,24 +35,28 @@ def automatic():
 
 def run(method: str, left_image: MatLike, right_image: MatLike, template_x_size: int, template_y_size: int, search_range: int, score_fn: ScoreFunction):
     h, w = left_image.shape[:2]
-    left_image = cv.pyrDown(left_image)
-    right_image = cv.pyrDown(right_image)
+    # left_image = cv.pyrDown(left_image)
+    # right_image = cv.pyrDown(right_image)
 
     if method == 'region':
         disparity_ltr, disparity_rtl = region_based(
             left_image, right_image, (template_y_size, template_x_size), search_range, score_fn)
 
-        disparity_ltr = cv.resize(
-            disparity_ltr, (w, h), interpolation=cv.INTER_NEAREST)
-        disparity_rtl = cv.resize(
-            disparity_rtl, (w, h), interpolation=cv.INTER_NEAREST)
+        # disparity_ltr = cv.resize(
+        #     disparity_ltr, (w, h), interpolation=cv.INTER_NEAREST)
+        # disparity_rtl = cv.resize(
+        #     disparity_rtl, (w, h), interpolation=cv.INTER_NEAREST)
+
+        show_image(normalize(disparity_ltr), name="disparity ltr")
 
         # validation
         disparity = validate(disparity_ltr, disparity_rtl)
 
+        show_image(normalize(disparity), name="disparity")
+
         # fill gaps
         for _ in range(2):
-            disparity = average_neighborhood(disparity)
+            disparity = average_neighborhood(disparity, max_size=99)
     elif method == 'feature':
         disparity_ltr, disparity_rtl = feature_based(
             left_image, right_image, (template_x_size, template_y_size), search_range, score_fn)
@@ -74,19 +78,8 @@ def run(method: str, left_image: MatLike, right_image: MatLike, template_x_size:
         show_image(np.hstack([normalize(i)
                    for i in (validated, averaged, disparity)]), name="disparity")
 
-        disparity = cv.resize(
-            cv.pyrUp(disparity), (w*2, h*2), interpolation=cv.INTER_NEAREST)
-        # disparity_ltr = cv.resize(
-        #     disparity_ltr, (w, h), interpolation=cv.INTER_NEAREST)
-        # disparity_rtl = cv.resize(
-        #     disparity_rtl, (w, h), interpolation=cv.INTER_NEAREST)
-
-        # show = np.hstack([normalize(d)
-        #                  for d in (disparity_ltr, disparity, disparity_rtl)])
-
-        # show_image(show, name="disparity raw")
-
-        # show_image(np.hstack((normalize(disparity), show)), name="disparity")
+    # disparity = cv.resize(
+    #     cv.pyrUp(disparity), (w*2, h*2), interpolation=cv.INTER_NEAREST)
 
     disparity = normalize(disparity)
 
@@ -101,4 +94,4 @@ right_image_path = "barn1/im1.ppm"
 left_image = load_image(left_image_path)
 right_image = load_image(right_image_path)
 
-run("feature", left_image, right_image, 7, 7, 64, score_NCC)
+run("region", left_image, right_image, 7, 7, 10, score_NCC)
