@@ -6,6 +6,8 @@ import cv2 as cv
 import numpy as np
 from cv2.typing import MatLike
 
+from lib.image import normalize
+
 
 def load_image(filename: str):
     """
@@ -16,12 +18,12 @@ def load_image(filename: str):
 
 def save_image(filename: str, image: MatLike):
     makedirs("output", exist_ok=True)
-    cv.imwrite(path.join("output", filename), image)
+    cv.imwrite(path.join("output", filename), normalize(image))
 
 
 def show_image(image: MatLike, name: str = "image", timeout_sec: int = None):
     name = f"Preview: {name}"
-    cv.imshow(name, image)
+    cv.imshow(name, normalize(image))
     gui_wait_key(name, timeout_sec=timeout_sec)
     cv.destroyWindow(name)
 

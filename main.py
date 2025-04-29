@@ -1,4 +1,3 @@
-import os
 import cv2 as cv
 import numpy as np
 
@@ -6,14 +5,15 @@ from cv2.typing import MatLike
 
 from lib.common import load_image, prompt, save_image, show_image
 from lib.feature_matcher import feature_based
-from lib.image import ScoreFunction, average_neighborhood, normalize, score_NCC, score_SAD, score_SSD, validate
+from lib.image import average_neighborhood, normalize, validate
+from lib.stereo import ScoreFunction, score_NCC, score_SAD, score_SSD
 from lib.region_matcher import region_based
 
 
 def interactive():
     method = prompt("Enter method", options=["region", "feature"], default=1)
     score_fn = prompt("Enter distance", options=[
-        "sad", "ssd", "ncc"], default=1)
+                      "sad", "ssd", "ncc"], default=1)
     if score_fn == "sad":
         score_fn = score_SAD
     elif score_fn == "ssd":
@@ -33,58 +33,46 @@ def automatic():
     pass
 
 
-def run(method: str, left_image: MatLike, right_image: MatLike, template_x_size: int, template_y_size: int, search_range: int, score_fn: ScoreFunction):
+def run(method: str, left_image: MatLike, right_image: MatLike, template_x_size: int, template_y_size: int, search_range: int, score_fn: str):
     h, w = left_image.shape[:2]
     # left_image = cv.pyrDown(left_image)
     # right_image = cv.pyrDown(right_image)
+    # left_image = cv.resize(left_image, (w//2, h//2))
+    # right_image = cv.resize(right_image, (w//2, h//2))
 
     if method == 'region':
         disparity_ltr, disparity_rtl = region_based(
             left_image, right_image, (template_y_size, template_x_size), search_range, score_fn)
 
-        # disparity_ltr = cv.resize(
-        #     disparity_ltr, (w, h), interpolation=cv.INTER_NEAREST)
-        # disparity_rtl = cv.resize(
-        #     disparity_rtl, (w, h), interpolation=cv.INTER_NEAREST)
-
-        show_image(normalize(disparity_ltr), name="disparity ltr")
-
         # validation
         disparity = validate(disparity_ltr, disparity_rtl)
 
-        show_image(normalize(disparity), name="disparity")
-
         # fill gaps
-        for _ in range(2):
-            disparity = average_neighborhood(disparity, max_size=99)
+        while np.any(disparity == 0):
+            disparity = average_neighborhood(disparity)
     elif method == 'feature':
         disparity_ltr, disparity_rtl = feature_based(
             left_image, right_image, (template_x_size, template_y_size), search_range, score_fn)
 
-        disparity = validate(disparity_ltr, disparity_rtl, threshold=1)
-        show_image(np.hstack([normalize(d)
-                   for d in (disparity_ltr, disparity, disparity_rtl)]), name="disparity raw")
+        # validation
+        disparity = validate(disparity_ltr, disparity_rtl)
 
-        validated = disparity.copy()
+        show_image(disparity)
 
-        # for _ in range(2):
-        #     disparity = average_neighborhood(disparity, max_size=99)
+        # fill gaps
+        while np.any(disparity == 0):
+            disparity = average_neighborhood(disparity)
+            show_image(disparity)
 
-        averaged = disparity.copy()
-
-        disparity = cv.inpaint(
-            averaged, (averaged == 0).astype(np.uint8), 3, cv.INPAINT_TELEA)
-
-        show_image(np.hstack([normalize(i)
-                   for i in (validated, averaged, disparity)]), name="disparity")
-
-    # disparity = cv.resize(
-    #     cv.pyrUp(disparity), (w*2, h*2), interpolation=cv.INTER_NEAREST)
+        # # fill the gaps
+        # disparity = normalize(disparity)
+        # disparity = cv.inpaint(
+        #     disparity, (disparity == 0).astype(np.uint8), 3, cv.INPAINT_TELEA)
 
     disparity = normalize(disparity)
 
     show_image(disparity)
-    save_image('disparity.png', disparity)
+    save_image(f'disparity_{method}_{score_fn}.png', disparity)
 
 
 # left_image_path = "tsukuba/scene1.row3.col1.ppm"
@@ -94,4 +82,4 @@ right_image_path = "barn1/im1.ppm"
 left_image = load_image(left_image_path)
 right_image = load_image(right_image_path)
 
-run("feature", left_image, right_image, 7, 7, 10, score_NCC)
+run("feature", left_image, right_image, 7, 7, 10, "ncc")
