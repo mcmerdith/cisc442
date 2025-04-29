@@ -33,6 +33,15 @@ def automatic():
     pass
 
 
+def fill_gaps(disparity: MatLike, max_iterations: int = 20, max_size: int = 21, minimum_neighbors: int = 5):
+    for _ in range(max_iterations):
+        disparity = average_neighborhood(
+            disparity, max_size, minimum_neighbors)
+        if not np.any(disparity == 0):
+            break
+    return disparity
+
+
 def run(method: str, left_image: MatLike, right_image: MatLike, template_x_size: int, template_y_size: int, search_range: int, score_fn: str):
     h, w = left_image.shape[:2]
     # left_image = cv.pyrDown(left_image)
@@ -57,12 +66,12 @@ def run(method: str, left_image: MatLike, right_image: MatLike, template_x_size:
         # validation
         disparity = validate(disparity_ltr, disparity_rtl)
 
-        show_image(disparity)
+        original = disparity.copy()
 
         # fill gaps
-        while np.any(disparity == 0):
-            disparity = average_neighborhood(disparity)
-            show_image(disparity)
+        disparity = fill_gaps(disparity)
+
+        show_image([original, disparity])
 
         # # fill the gaps
         # disparity = normalize(disparity)
@@ -71,7 +80,6 @@ def run(method: str, left_image: MatLike, right_image: MatLike, template_x_size:
 
     disparity = normalize(disparity)
 
-    show_image(disparity)
     save_image(f'disparity_{method}_{score_fn}.png', disparity)
 
 

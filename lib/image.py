@@ -41,21 +41,9 @@ def average_neighborhood(disparity: MatLike, max_size: int = 21, minimum_neighbo
             neighborhood = disparity[start_y:end_y,
                                      start_x:end_x]
 
-            # non_zero = np.argwhere(neighborhood)
-            non_zero = np.where(neighborhood != 0)
+            non_zero = neighborhood[np.nonzero(neighborhood)]
 
             if non_zero.shape[0] > minimum_neighbors:
-                # A = []
-                # B = []
-                # for yy, xx in non_zero:
-                #     dx = xx - x
-                #     dy = yy - y
-                #     A.append([dx*dx, dy*dy, dx*dy, dx, dy, 1])
-                #     B.append(neighborhood[yy, xx])
-                # A = np.array(A, dtype=np.float64)
-                # B = np.array(B, dtype=np.float64)
-                # coeff, _, _, _ = np.linalg.lstsq(A, B, rcond=None)
-                # averaged[y, x] = coeff[-1]
                 averaged[y, x] = \
                     np.mean(non_zero).round().astype(
                         averaged.dtype)

@@ -21,9 +21,13 @@ def save_image(filename: str, image: MatLike):
     cv.imwrite(path.join("output", filename), normalize(image))
 
 
-def show_image(image: MatLike, name: str = "image", timeout_sec: int = None):
+def show_image(image: MatLike | list[MatLike], name: str = "image", timeout_sec: int = None):
     name = f"Preview: {name}"
-    cv.imshow(name, normalize(image))
+    if isinstance(image, list):
+        image = np.hstack([normalize(i) for i in image])
+    else:
+        image = normalize(image)
+    cv.imshow(name, image)
     gui_wait_key(name, timeout_sec=timeout_sec)
     cv.destroyWindow(name)
 
