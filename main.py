@@ -1,32 +1,41 @@
+from time import time
 import cv2 as cv
 import numpy as np
 
 from cv2.typing import MatLike
 
-from lib.common import load_image, prompt, save_image, show_image
+from lib.common import TaskTimer, console, get_image_sets, load_image_set, prompt, save_image, show_image
 from lib.feature_matcher import feature_based
 from lib.image import average_neighborhood, normalize, validate
-from lib.stereo import ScoreFunction, score_NCC, score_SAD, score_SSD
 from lib.region_matcher import region_based
 
 
 def interactive():
-    method = prompt("Enter method", options=["region", "feature"], default=1)
-    score_fn = prompt("Enter distance", options=[
+    image_set = prompt("Select image set", options=get_image_sets(), default=0)
+    method = prompt("Select method", options=["region", "feature"], default=0)
+    score_fn = prompt("Select score function", options=[
                       "sad", "ssd", "ncc"], default=1)
-    if score_fn == "sad":
-        score_fn = score_SAD
-    elif score_fn == "ssd":
-        score_fn = score_SSD
-    elif score_fn == "ncc":
-        score_fn = score_NCC
-    else:
-        raise ValueError(f"Invalid score function: {score_fn}")
-    search_range = prompt("Enter search range", transformer=int, default=16)
-    template_x_size = prompt("Enter template_x_size (must be odd)", default=5,
+    search_range = prompt("Enter search range", transformer=int, default=10)
+    template_x_size = prompt("Enter template_x_size (must be odd)", default=7,
                              transformer=int, validator=lambda x: x % 2 == 1)
-    template_y_size = prompt("Enter template_y_size (must be odd)", default=5,
+    template_y_size = prompt("Enter template_y_size (must be odd)", default=7,
                              transformer=int, validator=lambda x: x % 2 == 1)
+
+    image_set = load_image_set(image_set)
+
+    pairs = [(image_set[i], image_set[i+1])
+             for i in range(len(image_set)-1)]
+
+    timer = TaskTimer(show_status=False)
+    for i, (left_image, right_image) in enumerate(pairs):
+        timer.start(f"Processing pair {i+1}/{len(pairs)}")
+
+        disparity = run(method, left_image, right_image, template_x_size,
+                        template_y_size, search_range, score_fn)
+
+        timer.complete()
+
+        save_image(f'disparity_{method}_{score_fn}_{i}.png', disparity)
 
 
 def automatic():
@@ -43,51 +52,28 @@ def fill_gaps(disparity: MatLike, max_iterations: int = 20, max_size: int = 21, 
 
 
 def run(method: str, left_image: MatLike, right_image: MatLike, template_x_size: int, template_y_size: int, search_range: int, score_fn: str):
-    h, w = left_image.shape[:2]
-    # left_image = cv.pyrDown(left_image)
-    # right_image = cv.pyrDown(right_image)
-    # left_image = cv.resize(left_image, (w//2, h//2))
-    # right_image = cv.resize(right_image, (w//2, h//2))
+    timer = TaskTimer().start("Calculating disparity")
 
     if method == 'region':
         disparity_ltr, disparity_rtl = region_based(
             left_image, right_image, (template_y_size, template_x_size), search_range, score_fn)
-
-        # validation
-        disparity = validate(disparity_ltr, disparity_rtl)
-
-        # fill gaps
-        while np.any(disparity == 0):
-            disparity = average_neighborhood(disparity)
     elif method == 'feature':
         disparity_ltr, disparity_rtl = feature_based(
             left_image, right_image, (template_x_size, template_y_size), search_range, score_fn)
 
-        # validation
-        disparity = validate(disparity_ltr, disparity_rtl)
+    timer.complete().start("Validating disparity")
 
-        original = disparity.copy()
+    # validation
+    disparity = validate(disparity_ltr, disparity_rtl)
 
-        # fill gaps
-        disparity = fill_gaps(disparity)
+    timer.complete().start("Filling gaps")
 
-        show_image([original, disparity])
+    # fill gaps
+    disparity = fill_gaps(disparity)
 
-        # # fill the gaps
-        # disparity = normalize(disparity)
-        # disparity = cv.inpaint(
-        #     disparity, (disparity == 0).astype(np.uint8), 3, cv.INPAINT_TELEA)
+    timer.complete()
 
-    disparity = normalize(disparity)
-
-    save_image(f'disparity_{method}_{score_fn}.png', disparity)
+    return normalize(disparity)
 
 
-# left_image_path = "tsukuba/scene1.row3.col1.ppm"
-# right_image_path = "tsukuba/scene1.row3.col2.ppm"
-left_image_path = "barn1/im0.ppm"
-right_image_path = "barn1/im1.ppm"
-left_image = load_image(left_image_path)
-right_image = load_image(right_image_path)
-
-run("feature", left_image, right_image, 7, 7, 10, "ncc")
+interactive()

@@ -1,4 +1,4 @@
-from os import makedirs, path
+from os import listdir, makedirs, path
 from time import time
 from typing import Callable, TypeVar
 
@@ -8,11 +8,17 @@ from cv2.typing import MatLike
 
 from lib.image import normalize
 
+from rich.console import Console
+
+console: Console
+console = Console()
+
 
 def load_image(filename: str):
     """
     Load an image as CV_U8
     """
+    assert path.isfile(path.join("input", filename)), "File not found"
     return cv.imread(path.join("input", filename))
 
 
@@ -30,6 +36,20 @@ def show_image(image: MatLike | list[MatLike], name: str = "image", timeout_sec:
     cv.imshow(name, image)
     gui_wait_key(name, timeout_sec=timeout_sec)
     cv.destroyWindow(name)
+
+
+def get_image_sets():
+    return sorted([i for i in listdir("input") if path.isdir(path.join("input", i))])
+
+
+def load_image_set(image_set: str):
+    set_path = path.join("input", image_set)
+    assert path.isdir(set_path), f"Image set not found: {set_path}"
+    files = sorted([i for i in listdir(set_path) if path.isfile(
+        path.join(set_path, i)) and i.endswith(".ppm")])
+
+    print(files)
+    return [load_image(path.join(image_set, i)) for i in files]
 
 
 def gui_wait_key(window_name: str, timeout_sec: int = None):
@@ -91,3 +111,35 @@ def prompt(message: str, options: list[ResponseType] = None, default: int | Resp
             break
 
     return response
+
+
+class TaskTimer:
+    time_s: float
+    show_status: bool
+
+    def __init__(self, show_status=True):
+        self.show_status = show_status
+        self.status = console.status(f"[yellow]Executing task[/yellow]")
+
+    def start(self, name: str):
+        self.time_s = time()
+        self.name = name
+        self._start()
+        return self
+
+    def complete(self):
+        elapsed = time() - self.time_s
+        console.log(f"[green]{self.name}[/green] completed in {elapsed:.1f}s")
+        self._stop()
+        return self
+
+    def _start(self):
+        self.status.update(f"[yellow]{self.name}[/yellow]")
+        if self.show_status:
+            self.status.start()
+        else:
+            console.log(f"[yellow]{self.name}[/yellow]")
+
+    def _stop(self):
+        if self.show_status:
+            self.status.stop()
