@@ -15,41 +15,40 @@ def interactive():
     method = prompt("Select method", options=["region", "feature"], default=0)
     score_fn = prompt("Select score function", options=[
                       "sad", "ssd", "ncc"], default=1)
-    search_range = prompt("Enter search range", transformer=int, default=10)
-    template_x_size = prompt("Enter template_x_size (must be odd)", default=7,
+    search_range = prompt("Enter search range", transformer=int, default=20)
+    template_x_size = prompt("Enter template_x_size (must be odd)", default=9,
                              transformer=int, validator=lambda x: x % 2 == 1)
-    template_y_size = prompt("Enter template_y_size (must be odd)", default=7,
+    template_y_size = prompt("Enter template_y_size (must be odd)", default=9,
                              transformer=int, validator=lambda x: x % 2 == 1)
 
     pairs = pair_images(load_image_set(image_set))
 
-    process_pairs(method, image_set, pairs, template_x_size, template_y_size, search_range, score_fn)
+    process_pairs(method, image_set, pairs, template_x_size,
+                  template_y_size, search_range, score_fn)
 
 
 def automatic():
-    # image_sets = [(name, pair_images(load_image_set(name))) for name in get_image_sets()]
-    image_sets = [("tsukuba", pair_images(load_image_set("tsukuba")))]
+    image_sets = [(name, pair_images(load_image_set(name)))
+                  for name in get_image_sets()]
 
     methods = ["region", "feature"]
-    method = "region"
-    template_x_size, template_y_size = 5, 5
-    search_range = 10
+    template_x_size, template_y_size = 9, 9
+    search_range = 20
     score_fns = ["sad", "ssd", "ncc"]
-    score_fn = "ncc"
 
     timer = TaskTimer(show_status=False)
     for name, pairs in image_sets:
-
-        # for method in methods:
-        #     for score_fn in score_fns:
-                timer.start(f"Processing image set {name} ({method}-{score_fn})")
-                process_pairs(method, name, pairs, template_x_size, template_y_size, search_range, score_fn)
+        for method in methods:
+            for score_fn in score_fns:
+                timer.start(
+                    f"Processing image set {name} ({method}-{score_fn})")
+                process_pairs(method, name, pairs, template_x_size,
+                              template_y_size, search_range, score_fn)
                 timer.complete()
-        
 
 
 def fill_gaps(disparity: MatLike, max_iterations: int = 20, max_size: int = 21, minimum_neighbors: int = 5):
-    for _ in range(max_iterations):
+    for i in range(max_iterations):
         disparity = average_neighborhood(
             disparity, max_size, minimum_neighbors)
         if not np.any(disparity == 0):
@@ -68,6 +67,7 @@ def process_pairs(method: str, name: str, image_pairs: list[tuple[MatLike, MatLi
         timer.complete()
 
         save_image(f"disparity_{i}.png", disparity, [name, method, score_fn])
+
 
 def run(method: str, left_image: MatLike, right_image: MatLike, template_x_size: int, template_y_size: int, search_range: int, score_fn: str):
     timer = TaskTimer().start("Calculating disparity")
