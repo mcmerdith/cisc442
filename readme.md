@@ -56,7 +56,7 @@ Region based matching provides a very precise result, with the disadvantage of b
 
 #### Feature based matching
 
-Feature based matching is much faster, but is more susceptible to noise in the source images.
+Feature based matching is much faster, but can struggle where images do not have many good features.
 
 The region based matcher compares each section of each image, providing a full disparity map with minimal gaps to fill.
 
