@@ -1,12 +1,11 @@
-from time import time
-import cv2 as cv
-import numpy as np
-
 from cv2.typing import MatLike
 
-from lib.common import TaskTimer, console, get_image_sets, load_image_set, pair_images, prompt, save_image, show_image
+from argparse import ArgumentParser
+
+from lib.common import (TaskTimer, get_image_sets, load_image_set,
+                        pair_images, prompt, save_image)
 from lib.feature_matcher import feature_based
-from lib.image import average_neighborhood, normalize, validate
+from lib.image import fill_gaps, normalize, validate
 from lib.region_matcher import region_based
 
 
@@ -47,15 +46,6 @@ def automatic():
                 timer.complete()
 
 
-def fill_gaps(disparity: MatLike, max_iterations: int = 20, max_size: int = 21, minimum_neighbors: int = 5):
-    for i in range(max_iterations):
-        disparity = average_neighborhood(
-            disparity, max_size, minimum_neighbors)
-        if not np.any(disparity == 0):
-            break
-    return disparity
-
-
 def process_pairs(method: str, name: str, image_pairs: list[tuple[MatLike, MatLike]], template_x_size: int, template_y_size: int, search_range: int, score_fn: str):
     timer = TaskTimer(show_status=False)
     for i, (left_image, right_image) in enumerate(image_pairs):
@@ -94,4 +84,12 @@ def run(method: str, left_image: MatLike, right_image: MatLike, template_x_size:
     return normalize(disparity)
 
 
-automatic()
+if __name__ == "__main__":
+    parser = ArgumentParser()
+    parser.add_argument("--automatic", action="store_true")
+    args = parser.parse_args()
+
+    if args.automatic:
+        automatic()
+    else:
+        interactive()

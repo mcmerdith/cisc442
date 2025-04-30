@@ -10,6 +10,16 @@ def normalize(image: MatLike):
                         beta=255, norm_type=cv.NORM_MINMAX, dtype=cv.CV_8U)
 
 
+def fill_gaps(disparity: MatLike, max_iterations: int = 20, max_size: int = 21, minimum_neighbors: int = 5):
+    for i in range(max_iterations):
+        disparity = average_neighborhood(
+            disparity, max_size, minimum_neighbors)
+        if not np.any(disparity == 0):
+            break
+    return disparity
+
+
+# njit not used for balance between code complexity and speed
 # @njit
 def average_neighborhood(disparity: MatLike, max_size: int = 21, minimum_neighbors: int = 5) -> MatLike:
     """
