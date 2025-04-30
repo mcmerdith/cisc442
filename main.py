@@ -27,18 +27,21 @@ def interactive():
 
 
 def automatic():
-    image_sets = [(name, pair_images(load_image_set(name))) for name in get_image_sets()]
+    # image_sets = [(name, pair_images(load_image_set(name))) for name in get_image_sets()]
+    image_sets = [("tsukuba", pair_images(load_image_set("tsukuba")))]
 
     methods = ["region", "feature"]
+    method = "region"
     template_x_size, template_y_size = 5, 5
     search_range = 10
     score_fns = ["sad", "ssd", "ncc"]
+    score_fn = "ncc"
 
     timer = TaskTimer(show_status=False)
     for name, pairs in image_sets:
 
-        for method in methods:
-            for score_fn in score_fns:
+        # for method in methods:
+        #     for score_fn in score_fns:
                 timer.start(f"Processing image set {name} ({method}-{score_fn})")
                 process_pairs(method, name, pairs, template_x_size, template_y_size, search_range, score_fn)
                 timer.complete()
