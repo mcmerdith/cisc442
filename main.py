@@ -64,7 +64,7 @@ def process_pairs(method: str, name: str, image_pairs: list[tuple[MatLike, MatLi
 
         timer.complete()
 
-        save_image(f"disparity_{method}_{score_fn}_{i}.png", disparity, [name])
+        save_image(f"disparity_{i}.png", disparity, [name, method, score_fn])
 
 def run(method: str, left_image: MatLike, right_image: MatLike, template_x_size: int, template_y_size: int, search_range: int, score_fn: str):
     timer = TaskTimer().start("Calculating disparity")
