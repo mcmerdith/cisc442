@@ -4,7 +4,7 @@ import numpy as np
 
 from cv2.typing import MatLike
 
-from lib.common import TaskTimer, console, get_image_sets, load_image_set, prompt, save_image, show_image
+from lib.common import TaskTimer, console, get_image_sets, load_image_set, pair_images, prompt, save_image, show_image
 from lib.feature_matcher import feature_based
 from lib.image import average_neighborhood, normalize, validate
 from lib.region_matcher import region_based
@@ -21,25 +21,28 @@ def interactive():
     template_y_size = prompt("Enter template_y_size (must be odd)", default=7,
                              transformer=int, validator=lambda x: x % 2 == 1)
 
-    image_set = load_image_set(image_set)
+    pairs = pair_images(load_image_set(image_set))
 
-    pairs = [(image_set[i], image_set[i+1])
-             for i in range(len(image_set)-1)]
-
-    timer = TaskTimer(show_status=False)
-    for i, (left_image, right_image) in enumerate(pairs):
-        timer.start(f"Processing pair {i+1}/{len(pairs)}")
-
-        disparity = run(method, left_image, right_image, template_x_size,
-                        template_y_size, search_range, score_fn)
-
-        timer.complete()
-
-        save_image(f'disparity_{method}_{score_fn}_{i}.png', disparity)
+    process_pairs(method, image_set, pairs, template_x_size, template_y_size, search_range, score_fn)
 
 
 def automatic():
-    pass
+    image_sets = [(name, pair_images(load_image_set(name))) for name in get_image_sets()]
+
+    methods = ["region", "feature"]
+    template_x_size, template_y_size = 5, 5
+    search_range = 10
+    score_fns = ["sad", "ssd", "ncc"]
+
+    timer = TaskTimer(show_status=False)
+    for name, pairs in image_sets:
+
+        for method in methods:
+            for score_fn in score_fns:
+                timer.start(f"Processing image set {name} ({method}-{score_fn})")
+                process_pairs(method, name, pairs, template_x_size, template_y_size, search_range, score_fn)
+                timer.complete()
+        
 
 
 def fill_gaps(disparity: MatLike, max_iterations: int = 20, max_size: int = 21, minimum_neighbors: int = 5):
@@ -50,6 +53,18 @@ def fill_gaps(disparity: MatLike, max_iterations: int = 20, max_size: int = 21, 
             break
     return disparity
 
+
+def process_pairs(method: str, name: str, image_pairs: list[tuple[MatLike, MatLike]], template_x_size: int, template_y_size: int, search_range: int, score_fn: str):
+    timer = TaskTimer(show_status=False)
+    for i, (left_image, right_image) in enumerate(image_pairs):
+        timer.start(f"Processing pair {i+1}/{len(image_pairs)}")
+
+        disparity = run(method, left_image, right_image, template_x_size,
+                        template_y_size, search_range, score_fn)
+
+        timer.complete()
+
+        save_image(f"disparity_{method}_{score_fn}_{i}.png", disparity, [name])
 
 def run(method: str, left_image: MatLike, right_image: MatLike, template_x_size: int, template_y_size: int, search_range: int, score_fn: str):
     timer = TaskTimer().start("Calculating disparity")
@@ -76,4 +91,4 @@ def run(method: str, left_image: MatLike, right_image: MatLike, template_x_size:
     return normalize(disparity)
 
 
-interactive()
+automatic()

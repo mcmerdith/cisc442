@@ -3,7 +3,7 @@
 ## Setup
 
 ```bash
-pip install opencv-python numpy numba scipy
+pip install opencv-python numpy numba scipy rich
 ```
 
 ## Running

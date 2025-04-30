@@ -22,9 +22,12 @@ def load_image(filename: str):
     return cv.imread(path.join("input", filename))
 
 
-def save_image(filename: str, image: MatLike):
-    makedirs("output", exist_ok=True)
-    cv.imwrite(path.join("output", filename), normalize(image))
+def save_image(filename: str, image: MatLike, dirs: list[str] = None):
+    dir_path = "output"
+    if dirs is not None:
+        dir_path = path.join(dir_path, *dirs)
+    makedirs(dir_path, exist_ok=True)
+    cv.imwrite(path.join(dir_path, filename), normalize(image))
 
 
 def show_image(image: MatLike | list[MatLike], name: str = "image", timeout_sec: int = None):
@@ -48,8 +51,12 @@ def load_image_set(image_set: str):
     files = sorted([i for i in listdir(set_path) if path.isfile(
         path.join(set_path, i)) and i.endswith(".ppm")])
 
-    print(files)
     return [load_image(path.join(image_set, i)) for i in files]
+
+
+def pair_images(image_set: list[MatLike]):
+    return [(image_set[i], image_set[i+1])
+             for i in range(len(image_set)-1)]
 
 
 def gui_wait_key(window_name: str, timeout_sec: int = None):
